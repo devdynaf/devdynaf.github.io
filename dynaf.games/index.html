@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="google-site-verification" content="-XTa4EpV2QehMOVgFCHTriwEOL1k_oDqUNUV1US1vcM" />
+  <title>DYNAF — Minigames</title>
+  <meta name="description" content="A small collection of browser-based minigames. No account, no downloads, just play." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Bebas+Neue&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #080808;
+      --surface: #111111;
+      --border: #222222;
+      --text: #e8e8e0;
+      --muted: #555550;
+      --accent: #b8ff57;
+      --accent-dim: rgba(184,255,87,0.08);
+      --font-display: 'Bebas Neue', sans-serif;
+      --font-mono: 'DM Mono', monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.6;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Scanline overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.18) 2px,
+        rgba(0,0,0,0.18) 4px
+      );
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* Grain texture */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: -200%;
+      width: 400%;
+      height: 400%;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      opacity: 0.35;
+      pointer-events: none;
+      z-index: 9998;
+      animation: grain 8s steps(10) infinite;
+    }
+
+    @keyframes grain {
+      0%, 100% { transform: translate(0, 0); }
+      10% { transform: translate(-2%, -3%); }
+      20% { transform: translate(3%, 2%); }
+      30% { transform: translate(-1%, 4%); }
+      40% { transform: translate(4%, -1%); }
+      50% { transform: translate(-3%, 1%); }
+      60% { transform: translate(2%, -4%); }
+      70% { transform: translate(-4%, 3%); }
+      80% { transform: translate(1%, -2%); }
+      90% { transform: translate(3%, 4%); }
+    }
+
+    /* ── Layout ── */
+    .wrapper {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ── Header ── */
+    header {
+      padding: 52px 0 40px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      opacity: 0;
+      animation: fadeUp 0.6s ease forwards;
+    }
+
+    .logo-block {}
+
+    .logo {
+      font-family: var(--font-display);
+      font-size: clamp(56px, 10vw, 96px);
+      letter-spacing: 0.02em;
+      line-height: 0.9;
+      color: var(--text);
+    }
+
+    .logo span {
+      color: var(--accent);
+    }
+
+    .tagline {
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-top: 10px;
+    }
+
+    .header-meta {
+      text-align: right;
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      padding-bottom: 4px;
+    }
+
+    .header-meta .count {
+      font-size: 28px;
+      font-family: var(--font-display);
+      color: var(--accent);
+      display: block;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    /* ── Game grid ── */
+    .games-section {
+      padding: 48px 0 80px;
+    }
+
+    .section-label {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      max-width: 900px;
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+    }
+
+    /* ── Game card ── */
+    .card {
+      background: var(--bg);
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+      position: relative;
+      overflow: hidden;
+      transition: background 0.15s ease;
+      opacity: 0;
+      animation: fadeUp 0.5s ease forwards;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--accent-dim);
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+
+    .card:hover {
+      background: var(--surface);
+    }
+
+    .card:hover::before {
+      opacity: 1;
+    }
+
+    .card:hover .card-arrow {
+      transform: translate(3px, -3px);
+      color: var(--accent);
+    }
+
+    .card:hover .card-num {
+      color: var(--accent);
+    }
+
+    .card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+
+    .card-icon {
+      font-size: 28px;
+      line-height: 1;
+      filter: grayscale(0.3);
+      transition: filter 0.15s ease;
+    }
+
+    .card:hover .card-icon {
+      filter: grayscale(0);
+    }
+
+    .card-arrow {
+      font-size: 18px;
+      color: var(--muted);
+      transition: transform 0.2s ease, color 0.15s ease;
+      font-style: normal;
+    }
+
+    .card-num {
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      color: var(--muted);
+      transition: color 0.15s ease;
+    }
+
+    .card-title {
+      font-family: var(--font-display);
+      font-size: 26px;
+      letter-spacing: 0.04em;
+      line-height: 1;
+      color: var(--text);
+    }
+
+    .card-desc {
+      font-size: 11.5px;
+      color: var(--muted);
+      line-height: 1.55;
+      flex: 1;
+    }
+
+    .card-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .tag {
+      font-size: 9.5px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 2px 7px;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .card:hover .tag {
+      border-color: rgba(184,255,87,0.25);
+      color: var(--accent);
+    }
+
+    /* ── Card image ── */
+    .card-img {
+      width: calc(100% + 56px);
+      margin: -28px -28px 0 -28px;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+      display: block;
+      border-bottom: 1px solid var(--border);
+      filter: grayscale(0.25) brightness(0.9);
+      transition: filter 0.2s ease;
+    }
+
+    .card:hover .card-img {
+      filter: grayscale(0) brightness(1);
+    }
+
+    /* Stagger card animations */
+    .card:nth-child(1) { animation-delay: 0.15s; }
+    .card:nth-child(2) { animation-delay: 0.22s; }
+    .card:nth-child(3) { animation-delay: 0.29s; }
+    .card:nth-child(4) { animation-delay: 0.36s; }
+    .card:nth-child(5) { animation-delay: 0.43s; }
+    .card:nth-child(6) { animation-delay: 0.50s; }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 24px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--muted);
+      font-size: 10.5px;
+      letter-spacing: 0.1em;
+      opacity: 0;
+      animation: fadeUp 0.5s ease 0.6s forwards;
+    }
+
+    footer a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    footer a:hover { color: var(--accent); }
+
+    /* ── Animations ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Mobile ── */
+    @media (max-width: 600px) {
+      header { flex-direction: column; align-items: flex-start; gap: 8px; }
+      .header-meta { text-align: left; }
+      .grid { grid-template-columns: 1fr; }
+      footer { flex-direction: column; gap: 8px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+
+  <header>
+    <div class="logo-block">
+      <div class="logo">DYNAF<span>.</span>GAMES</div>
+      <div class="tagline">Browser minigames — no account, no download</div>
+    </div>
+    <div class="header-meta">
+      <span class="count" id="game-count">05</span>
+      games available
+    </div>
+  </header>
+
+  <main class="games-section">
+    <div class="section-label">All games</div>
+
+    <div class="grid" id="game-grid">
+
+      <!-- GAME 1 -->
+      <a class="card" href="https://devdynaf.github.io/redstone-lab/" target="_blank" rel="noopener">
+        <img class="card-img" src="img/redstone-lab.png" alt="Redstone Lab preview" />
+        <div class="card-top">
+          <span class="card-icon">⚡</span>
+          <i class="card-arrow">↗</i>
+        </div>
+        <div class="card-num">01</div>
+        <div class="card-title">REDSTONE LAB</div>
+        <div class="card-desc">Build and simulate Minecraft-style redstone circuits. Wire up logic gates, pistons, and repeaters in real time.</div>
+        <div class="card-tags">
+          <span class="tag">Sandbox</span>
+          <span class="tag">Logic</span>
+          <span class="tag">Builder</span>
+        </div>
+      </a>
+
+      <!-- GAME 2 -->
+      <a class="card" href="https://devdynaf.github.io/falling-sand/" target="_blank" rel="noopener">
+        <img class="card-img" src="img/falling-sand.png" alt="Falling Sand preview" />
+        <div class="card-top">
+          <span class="card-icon">🔥</span>
+          <i class="card-arrow">↗</i>
+        </div>
+        <div class="card-num">02</div>
+        <div class="card-title">FALLING SAND</div>
+        <div class="card-desc">Simulate fire, water, oil, lava, acid, and more. Watch elements interact and burn in a persistent sandbox.</div>
+        <div class="card-tags">
+          <span class="tag">Simulation</span>
+          <span class="tag">Sandbox</span>
+          <span class="tag">Physics</span>
+        </div>
+      </a>
+
+
+
+    </div>
+  </main>
+
+  <footer>
+    <span>DYNAF.GAMES</span>
+    <span>All games run in your browser — no account needed</span>
+  </footer>
+
+</div>
+
+<script>
+  // Auto-update game count from grid
+  const cards = document.querySelectorAll('.card');
+  document.getElementById('game-count').textContent =
+    String(cards.length).padStart(2, '0');
+</script>
+</body>
+</html>
