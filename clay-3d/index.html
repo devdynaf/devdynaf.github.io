@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Pottery Wheel</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{overflow:hidden;background:#1a1a2e;font-family:'Inter','Segoe UI',Tahoma,Geneva,Verdana,sans-serif;touch-action:none;-webkit-user-select:none;user-select:none}
+  #canvas-container{width:100vw;height:100vh;position:fixed;top:0;left:0}
+  canvas{display:block}
+
+  /* ═══ Compact Toolbar ═══ */
+  #toolbar{
+    position:fixed;top:16px;left:50%;transform:translateX(-50%);
+    display:flex;gap:6px;padding:8px 12px;z-index:10;
+    background:rgba(20,18,36,0.6);backdrop-filter:blur(20px) saturate(1.5);-webkit-backdrop-filter:blur(20px) saturate(1.5);
+    border:1px solid rgba(255,255,255,0.08);border-radius:14px;
+    box-shadow:0 8px 32px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.06);
+  }
+  .tb-btn{
+    width:44px;height:44px;border:none;border-radius:10px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(255,255,255,0.06);transition:all .2s;position:relative;
+    color:rgba(200,190,170,0.8);font-size:18px;
+  }
+  .tb-btn:hover{background:rgba(255,255,255,0.12);transform:translateY(-1px)}
+  .tb-btn:active{transform:scale(.95)}
+  .tb-btn.active-state{background:rgba(232,168,64,0.2);color:#f0c870;box-shadow:0 0 12px rgba(232,168,64,0.15)}
+  .tb-btn .tb-label{
+    position:absolute;bottom:-22px;left:50%;transform:translateX(-50%);
+    font-size:9px;text-transform:uppercase;letter-spacing:.8px;font-weight:600;
+    color:rgba(200,190,170,0.5);white-space:nowrap;opacity:0;transition:opacity .2s;
+    pointer-events:none;
+  }
+  .tb-btn:hover .tb-label{opacity:1}
+
+  .tb-btn.wide{width:auto;padding:0 20px;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#fff}
+  .tb-btn.wide:hover .tb-label{opacity:0}
+  .tb-btn.wide.start-off{background:linear-gradient(135deg,#c47a2e,#a85e1c);box-shadow:0 3px 12px rgba(196,122,46,0.35)}
+  .tb-btn.wide.start-off:hover{background:linear-gradient(135deg,#d88a3e,#b86e2c);box-shadow:0 5px 18px rgba(196,122,46,0.5)}
+  .tb-btn.wide.start-on{background:linear-gradient(135deg,#4a9c5c,#3a7a46);box-shadow:0 3px 12px rgba(74,156,92,0.35)}
+  .tb-btn.wide.start-on:hover{background:linear-gradient(135deg,#5aac6c,#4a8a56)}
+
+  .tb-sep{width:1px;background:rgba(255,255,255,0.08);margin:4px 2px}
+
+  .paint-swatch{
+    width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,0.3);
+    position:absolute;bottom:6px;right:6px;
+  }
+
+  /* Back button */
+  .tb-btn.back-link{
+    background:rgba(255,255,255,0.04);
+  }
+  .tb-btn.back-link:hover{background:rgba(255,255,255,0.1)}
+
+  /* ═══ Slide-out Side Panel ═══ */
+  #side-panel{
+    position:fixed;top:0;right:-340px;width:320px;height:100vh;
+    z-index:15;transition:right .35s cubic-bezier(.4,0,.2,1);
+    display:flex;flex-direction:column;
+    background:rgba(16,14,30,0.85);backdrop-filter:blur(24px) saturate(1.5);-webkit-backdrop-filter:blur(24px) saturate(1.5);
+    border-left:1px solid rgba(255,255,255,0.06);
+    box-shadow:-8px 0 40px rgba(0,0,0,0.4);
+  }
+  #side-panel.open{right:0}
+
+  .panel-header{
+    padding:20px 24px 16px;display:flex;align-items:center;justify-content:space-between;
+    border-bottom:1px solid rgba(255,255,255,0.06);
+  }
+  .panel-header h2{color:#e8d5a8;font-size:15px;font-weight:700;letter-spacing:.5px}
+  .panel-close{
+    width:32px;height:32px;border:none;border-radius:8px;cursor:pointer;
+    background:rgba(255,255,255,0.06);color:rgba(200,190,170,0.7);font-size:18px;
+    display:flex;align-items:center;justify-content:center;transition:all .2s;
+  }
+  .panel-close:hover{background:rgba(255,255,255,0.12);color:#fff}
+
+  .panel-body{flex:1;overflow-y:auto;padding:20px 24px 32px}
+  .panel-body::-webkit-scrollbar{width:4px}
+  .panel-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:2px}
+
+  .panel-section{margin-bottom:28px}
+  .panel-section-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(200,190,170,0.5);margin-bottom:14px}
+
+  .panel-slider-row{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+  .panel-slider-row label{font-size:12px;font-weight:500;color:rgba(200,190,170,0.7);min-width:70px}
+  .panel-slider-row input[type="range"]{
+    -webkit-appearance:none;appearance:none;flex:1;height:6px;border-radius:3px;
+    background:rgba(255,255,255,0.08);outline:none;cursor:pointer;
+  }
+  .panel-slider-row input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance:none;appearance:none;width:18px;height:18px;border-radius:50%;
+    background:radial-gradient(circle at 35% 35%,#f0c870,#d4922a);box-shadow:0 2px 8px rgba(232,168,64,0.4);cursor:grab;
+  }
+  .panel-slider-row input[type="range"]::-moz-range-thumb{
+    width:18px;height:18px;border-radius:50%;
+    background:radial-gradient(circle at 35% 35%,#f0c870,#d4922a);box-shadow:0 2px 8px rgba(232,168,64,0.4);border:none;cursor:grab;
+  }
+  .panel-slider-row input[type="range"]:disabled{opacity:.25;cursor:not-allowed}
+  .panel-slider-row input[type="range"]:disabled::-webkit-slider-thumb{background:#666;box-shadow:none;cursor:not-allowed}
+  .panel-slider-row .val{font-size:14px;font-weight:700;color:#f0dcc0;min-width:30px;text-align:right}
+
+  .panel-action-btn{
+    width:100%;padding:10px;font-size:12px;font-weight:600;letter-spacing:.8px;
+    text-transform:uppercase;color:#fff;border:none;border-radius:10px;cursor:pointer;
+    transition:all .2s;margin-bottom:10px;
+  }
+  .panel-action-btn.water{background:linear-gradient(135deg,#3a7aaa,#2a5a8a);box-shadow:0 3px 12px rgba(58,122,170,0.3)}
+  .panel-action-btn.water:hover{background:linear-gradient(135deg,#4a8aba,#3a6a9a);transform:translateY(-1px)}
+  .panel-action-btn.water:disabled{opacity:.25;cursor:not-allowed;transform:none}
+
+  .panel-action-btn.clear-paint{background:linear-gradient(135deg,#a04040,#803030);box-shadow:0 3px 12px rgba(160,64,64,0.3)}
+  .panel-action-btn.clear-paint:hover{background:linear-gradient(135deg,#b05050,#904040);transform:translateY(-1px)}
+
+  .paint-row{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .paint-row label{font-size:12px;font-weight:500;color:rgba(200,190,170,0.7);min-width:50px}
+  .paint-color-input-wrap{
+    display:flex;align-items:center;gap:8px;flex:1;
+    background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);
+    border-radius:8px;padding:4px 10px;
+  }
+  .paint-color-input-wrap input[type="color"]{
+    -webkit-appearance:none;appearance:none;width:28px;height:28px;border:none;
+    border-radius:6px;cursor:pointer;background:none;padding:0;
+  }
+  .paint-color-input-wrap input[type="color"]::-webkit-color-swatch-wrapper{padding:0}
+  .paint-color-input-wrap input[type="color"]::-webkit-color-swatch{border:1px solid rgba(255,255,255,0.2);border-radius:5px}
+  .paint-color-input-wrap input[type="text"]{
+    flex:1;background:none;border:none;outline:none;color:#e8d5a8;
+    font-family:'Inter',monospace;font-size:13px;font-weight:600;letter-spacing:.5px;
+  }
+  .paint-color-input-wrap input[type="text"]::placeholder{color:rgba(200,190,170,0.3)}
+
+  .paint-presets{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .paint-preset{
+    width:28px;height:28px;border-radius:6px;cursor:pointer;border:2px solid transparent;
+    transition:all .15s;
+  }
+  .paint-preset:hover{transform:scale(1.15);border-color:rgba(255,255,255,0.3)}
+  .paint-preset.selected{border-color:#f0c870;box-shadow:0 0 8px rgba(232,168,64,0.3)}
+
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .toggle-row span{font-size:12px;font-weight:500;color:rgba(200,190,170,0.7)}
+  .toggle-switch{
+    width:44px;height:24px;border-radius:12px;cursor:pointer;
+    background:rgba(255,255,255,0.1);position:relative;transition:background .25s;
+    border:none;padding:0;
+  }
+  .toggle-switch.on{background:linear-gradient(135deg,#e8a840,#d4922a)}
+  .toggle-switch::after{
+    content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;
+    border-radius:50%;background:#fff;transition:transform .25s;box-shadow:0 1px 4px rgba(0,0,0,0.3);
+  }
+  .toggle-switch.on::after{transform:translateX(20px)}
+
+  .brush-preview{width:40px;height:40px;display:flex;align-items:center;justify-content:center}
+  .brush-dot{border-radius:50%;background:rgba(255,255,255,0.6);transition:all .15s}
+
+  #instructions{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+    color:rgba(200,184,138,0.75);font-size:13px;text-align:center;z-index:10;
+    pointer-events:none;transition:opacity .6s;
+    background:rgba(20,18,36,0.45);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    padding:10px 24px;border-radius:12px;border:1px solid rgba(255,255,255,0.06);max-width:90vw;
+  }
+  #instructions strong{color:#e8c870}
+  #instructions kbd{
+    display:inline-block;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);
+    border-radius:4px;padding:1px 6px;font-size:11px;font-family:inherit;color:#ddd;margin:0 2px;
+  }
+
+  #toast{
+    position:fixed;top:80px;left:50%;transform:translateX(-50%) translateY(-16px);
+    background:rgba(30,26,48,0.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    color:#e8d5a8;padding:10px 28px;border-radius:12px;font-size:13px;font-weight:500;
+    opacity:0;transition:all .4s cubic-bezier(.4,0,.2,1);z-index:25;pointer-events:none;
+    border:1px solid rgba(232,168,64,0.2);box-shadow:0 4px 20px rgba(0,0,0,0.3);
+  }
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  #camera-hint{
+    position:fixed;bottom:24px;right:24px;display:flex;gap:6px;align-items:center;
+    z-index:10;pointer-events:none;opacity:.4;transition:opacity .3s;
+  }
+  #camera-hint .key-icon{
+    width:26px;height:26px;background:rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.12);border-radius:6px;
+    display:flex;align-items:center;justify-content:center;font-size:14px;
+    color:rgba(200,190,170,0.5);
+  }
+
+  #wetness-bar{
+    position:fixed;bottom:24px;left:24px;z-index:10;pointer-events:none;
+    display:flex;align-items:center;gap:8px;opacity:0;transition:opacity .4s;
+  }
+  #wetness-bar.visible{opacity:1}
+  #wetness-bar label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:rgba(120,180,220,0.8);font-weight:600}
+  #wetness-track{width:80px;height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden}
+  #wetness-fill{height:100%;width:100%;background:linear-gradient(90deg,#4a90b8,#78c0e8);border-radius:2px;transition:width .3s}
+
+  #paint-indicator{
+    position:fixed;top:76px;left:50%;transform:translateX(-50%);z-index:10;
+    padding:6px 18px;border-radius:10px;font-size:11px;font-weight:600;
+    text-transform:uppercase;letter-spacing:1px;pointer-events:none;
+    background:rgba(232,168,64,0.15);backdrop-filter:blur(8px);
+    color:#f0c870;border:1px solid rgba(232,168,64,0.2);
+    opacity:0;transition:opacity .3s;
+  }
+  #paint-indicator.visible{opacity:1}
+</style>
+</head>
+<body>
+
+<div id="canvas-container"></div>
+
+<!-- Compact Toolbar -->
+<div id="toolbar">
+  <a href="https://devdynaf.github.io" class="tb-btn back-link" id="back-btn" title="Back to site">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    <span class="tb-label">Back</span>
+  </a>
+  <div class="tb-sep"></div>
+  <button class="tb-btn wide start-off" id="start-btn">Start</button>
+  <div class="tb-sep"></div>
+  <button class="tb-btn" id="settings-btn" title="Settings">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+    <span class="tb-label">Settings</span>
+  </button>
+  <button class="tb-btn" id="paint-btn" title="Paint">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+    <span class="tb-label">Paint</span>
+    <div class="paint-swatch" id="paint-swatch-preview" style="background:#D94040"></div>
+  </button>
+</div>
+
+<!-- Side Panel -->
+<div id="side-panel">
+  <div class="panel-header">
+    <h2 id="panel-title">Settings</h2>
+    <button class="panel-close" id="panel-close">&times;</button>
+  </div>
+  <div class="panel-body" id="panel-body"></div>
+</div>
+
+<div id="paint-indicator">Paint Mode — Click on the clay to paint</div>
+
+<div id="instructions">
+  Press <strong>Start</strong> to begin — then drag on the clay to shape it!
+  &nbsp;|&nbsp; <kbd>&larr;</kbd><kbd>&rarr;</kbd><kbd>&uarr;</kbd><kbd>&darr;</kbd> orbit &nbsp; <kbd>Scroll</kbd> zoom
+</div>
+
+<div id="camera-hint">
+  <div class="key-icon">&#8592;</div>
+  <div class="key-icon">&#8593;</div>
+  <div class="key-icon">&#8595;</div>
+  <div class="key-icon">&#8594;</div>
+</div>
+
+<div id="wetness-bar">
+  <label>Wetness</label>
+  <div id="wetness-track"><div id="wetness-fill"></div></div>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+  /* ═══════════════ STATE ═══════════════ */
+  let gameStarted = false;
+  let wheelSpeed = 0.3;
+  let clayAmount = 0.6;
+  let wheelAngle = 0;
+  let isDragging = false;
+  let lastMouse = { x: 0, y: 0 };
+  let wetness = 1.0;
+
+  let paintMode = false;
+  let paintColorHex = '#D94040';
+  let paintBrushSize = 6; // radius in (profile, segment) space
+
+  const PROFILE_SEGMENTS = 50;
+  const LATHE_SEGMENTS = 72;
+  let profile = []; // { radius, height }
+  // 2D color map: colorMap[profileIdx * LATHE_SEGMENTS + segIdx] = THREE.Color | null
+  let colorMap = null;
+
+  let activePanel = null;
+
+  /* Camera orbit */
+  let camTheta = 0, camPhi = 0.42, camRadius = 10;
+  const CAM_MIN_R = 5, CAM_MAX_R = 18, CAM_SPEED = 1.6;
+  const keysDown = {};
+
+  /* ═══════════════ DOM ═══════════════ */
+  const container = document.getElementById('canvas-container');
+  const startBtn = document.getElementById('start-btn');
+  const settingsBtn = document.getElementById('settings-btn');
+  const paintBtn = document.getElementById('paint-btn');
+  const paintSwatchPreview = document.getElementById('paint-swatch-preview');
+  const sidePanel = document.getElementById('side-panel');
+  const panelTitle = document.getElementById('panel-title');
+  const panelBody = document.getElementById('panel-body');
+  const panelClose = document.getElementById('panel-close');
+  const instructionsEl = document.getElementById('instructions');
+  const toastEl = document.getElementById('toast');
+  const wetnessBar = document.getElementById('wetness-bar');
+  const wetnessFill = document.getElementById('wetness-fill');
+  const paintIndicator = document.getElementById('paint-indicator');
+
+  /* ═══════════════ PANEL SYSTEM ═══════════════ */
+  const PRESET_COLORS = [
+    '#D94040','#E87830','#E8C840','#50B840','#30A0A0','#3088D0',
+    '#6858C8','#A840A8','#F5F5F5','#B0A090','#605040','#201818',
+    '#C87850','#A05530','#8B6914','#2D5A27','#1A3A5C','#F0E0C0',
+  ];
+
+  let speedSliderValue = 30;
+  let claySliderValue = 60;
+
+  function buildSettingsPanel() {
+    panelTitle.textContent = 'Settings';
+    panelBody.innerHTML = `
+      <div class="panel-section">
+        <div class="panel-section-title">Wheel</div>
+        <div class="panel-slider-row">
+          <label>Speed</label>
+          <input type="range" id="ps-speed" min="0" max="100" value="${speedSliderValue}">
+          <span class="val" id="ps-speed-v">${speedSliderValue}</span>
+        </div>
+      </div>
+      <div class="panel-section">
+        <div class="panel-section-title">Clay</div>
+        <div class="panel-slider-row">
+          <label>Amount</label>
+          <input type="range" id="ps-clay" min="20" max="100" value="${claySliderValue}" ${gameStarted ? 'disabled' : ''}>
+          <span class="val" id="ps-clay-v">${claySliderValue}</span>
+        </div>
+      </div>
+      <div class="panel-section">
+        <div class="panel-section-title">Actions</div>
+        <button class="panel-action-btn water" id="ps-water" ${gameStarted ? '' : 'disabled'}>Apply Water</button>
+      </div>`;
+    document.getElementById('ps-speed').addEventListener('input', function() {
+      wheelSpeed = this.value / 100; speedSliderValue = +this.value;
+      document.getElementById('ps-speed-v').textContent = this.value;
+    });
+    document.getElementById('ps-clay').addEventListener('input', function() {
+      if (!gameStarted) {
+        clayAmount = this.value / 100; claySliderValue = +this.value;
+        document.getElementById('ps-clay-v').textContent = this.value;
+        initClay();
+      }
+    });
+    document.getElementById('ps-water').addEventListener('click', applyWater);
+  }
+
+  function buildPaintPanel() {
+    panelTitle.textContent = 'Paint';
+    panelBody.innerHTML = `
+      <div class="panel-section">
+        <div class="panel-section-title">Mode</div>
+        <div class="toggle-row">
+          <span>Paint Mode</span>
+          <button class="toggle-switch ${paintMode ? 'on' : ''}" id="pp-toggle"></button>
+        </div>
+      </div>
+      <div class="panel-section">
+        <div class="panel-section-title">Color</div>
+        <div class="paint-row">
+          <label>Hex</label>
+          <div class="paint-color-input-wrap">
+            <input type="color" id="pp-picker" value="${paintColorHex}">
+            <input type="text" id="pp-hex" value="${paintColorHex}" placeholder="#RRGGBB" maxlength="7">
+          </div>
+        </div>
+        <div class="paint-presets" id="pp-presets"></div>
+      </div>
+      <div class="panel-section">
+        <div class="panel-section-title">Brush</div>
+        <div class="panel-slider-row">
+          <label>Size</label>
+          <input type="range" id="pp-brush" min="2" max="18" value="${paintBrushSize}">
+          <div class="brush-preview"><div class="brush-dot" id="brush-dot" style="width:${paintBrushSize*1.5}px;height:${paintBrushSize*1.5}px"></div></div>
+        </div>
+      </div>
+      <div class="panel-section">
+        <button class="panel-action-btn clear-paint" id="pp-clear">Clear All Paint</button>
+      </div>`;
+    document.getElementById('pp-toggle').addEventListener('click', togglePaintMode);
+    document.getElementById('pp-picker').addEventListener('input', function() { setPaintColor(this.value, true); });
+    document.getElementById('pp-hex').addEventListener('change', function() {
+      let v = this.value.trim();
+      if (!v.startsWith('#')) v = '#' + v;
+      if (/^#[0-9A-Fa-f]{6}$/.test(v)) setPaintColor(v, true);
+    });
+    document.getElementById('pp-brush').addEventListener('input', function() {
+      paintBrushSize = +this.value;
+      const d = document.getElementById('brush-dot');
+      d.style.width = paintBrushSize * 1.5 + 'px';
+      d.style.height = paintBrushSize * 1.5 + 'px';
+    });
+    document.getElementById('pp-clear').addEventListener('click', clearAllPaint);
+    const presetsEl = document.getElementById('pp-presets');
+    PRESET_COLORS.forEach(c => {
+      const s = document.createElement('div');
+      s.className = 'paint-preset' + (c.toUpperCase() === paintColorHex.toUpperCase() ? ' selected' : '');
+      s.style.background = c;
+      s.addEventListener('click', () => setPaintColor(c, true));
+      presetsEl.appendChild(s);
+    });
+  }
+
+  function openPanel(which) {
+    if (activePanel === which) { closePanel(); return; }
+    activePanel = which;
+    if (which === 'settings') buildSettingsPanel();
+    else buildPaintPanel();
+    sidePanel.classList.add('open');
+    settingsBtn.classList.toggle('active-state', which === 'settings');
+    paintBtn.classList.toggle('active-state', which === 'paint');
+  }
+  function closePanel() {
+    activePanel = null;
+    sidePanel.classList.remove('open');
+    settingsBtn.classList.remove('active-state');
+    paintBtn.classList.remove('active-state');
+  }
+
+  settingsBtn.addEventListener('click', () => openPanel('settings'));
+  paintBtn.addEventListener('click', () => openPanel('paint'));
+  panelClose.addEventListener('click', closePanel);
+
+  function setPaintColor(hex, closePanelAfter) {
+    paintColorHex = hex.toUpperCase();
+    paintSwatchPreview.style.background = paintColorHex;
+    const p = document.getElementById('pp-picker');
+    const h = document.getElementById('pp-hex');
+    if (p) p.value = paintColorHex;
+    if (h) h.value = paintColorHex;
+    document.querySelectorAll('.paint-preset').forEach(s => {
+      s.classList.toggle('selected', s.style.background && rgbToHex(s.style.background) === paintColorHex);
+    });
+    if (closePanelAfter && activePanel) {
+      setTimeout(() => closePanel(), 150);
+    }
+  }
+
+  function rgbToHex(rgb) {
+    if (rgb.startsWith('#')) return rgb.toUpperCase();
+    const m = rgb.match(/\d+/g);
+    if (!m || m.length < 3) return '';
+    return '#' + m.slice(0,3).map(x => (+x).toString(16).padStart(2,'0')).join('').toUpperCase();
+  }
+
+  function togglePaintMode() {
+    paintMode = !paintMode;
+    const t = document.getElementById('pp-toggle');
+    if (t) t.classList.toggle('on', paintMode);
+    paintIndicator.classList.toggle('visible', paintMode);
+    renderer.domElement.style.cursor = paintMode ? 'crosshair' : 'default';
+    showToast(paintMode ? 'Paint mode ON — click/drag on the clay!' : 'Paint mode OFF');
+  }
+
+  function clearAllPaint() {
+    if (!colorMap) return;
+    for (let i = 0; i < colorMap.length; i++) colorMap[i] = null;
+    updateVertexColors();
+    showToast('All paint cleared!');
+  }
+
+  /* ═══════════════ THREE.JS ═══════════════ */
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x16162a);
+
+  const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+  camera.lookAt(0, 2.2, 0);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.0;
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  container.appendChild(renderer.domElement);
+
+  /* Camera */
+  function updateCameraPosition() {
+    camPhi = Math.max(0.1, Math.min(Math.PI / 2 - 0.05, camPhi));
+    camera.position.x = camRadius * Math.sin(camPhi) * Math.sin(camTheta);
+    camera.position.y = 2.2 + camRadius * Math.cos(camPhi);
+    camera.position.z = camRadius * Math.sin(camPhi) * Math.cos(camTheta);
+    camera.lookAt(0, 2.2, 0);
+  }
+  updateCameraPosition();
+
+  window.addEventListener('keydown', (e) => {
+    keysDown[e.code] = true;
+    if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)) e.preventDefault();
+  });
+  window.addEventListener('keyup', (e) => { keysDown[e.code] = false; });
+
+  renderer.domElement.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    camRadius = Math.max(CAM_MIN_R, Math.min(CAM_MAX_R, camRadius + e.deltaY * 0.008));
+    updateCameraPosition();
+  }, { passive: false });
+
+  /* ═══════════════ LIGHTING ═══════════════ */
+  scene.add(new THREE.AmbientLight(0x353050, 0.6));
+  scene.add(new THREE.HemisphereLight(0xc0a880, 0x302840, 0.4));
+
+  const keyLight = new THREE.DirectionalLight(0xffecd0, 1.4);
+  keyLight.position.set(5, 10, 6);
+  keyLight.castShadow = true;
+  keyLight.shadow.mapSize.width = keyLight.shadow.mapSize.height = 2048;
+  keyLight.shadow.camera.near = 0.5; keyLight.shadow.camera.far = 30;
+  keyLight.shadow.camera.left = -8; keyLight.shadow.camera.right = 8;
+  keyLight.shadow.camera.top = 10; keyLight.shadow.camera.bottom = -4;
+  keyLight.shadow.bias = -0.0005; keyLight.shadow.radius = 4;
+  scene.add(keyLight);
+
+  const fillLight = new THREE.DirectionalLight(0x8090b8, 0.35);
+  fillLight.position.set(-5, 5, -2);
+  scene.add(fillLight);
+
+  const rimLight = new THREE.SpotLight(0xffa858, 0.7, 25, Math.PI / 6, 0.6);
+  rimLight.position.set(-2, 8, -6);
+  rimLight.target.position.set(0, 2, 0);
+  scene.add(rimLight); scene.add(rimLight.target);
+
+  const bounceLight = new THREE.PointLight(0x905830, 0.25, 8);
+  bounceLight.position.set(0, 0.5, 2);
+  scene.add(bounceLight);
+
+  /* ═══════════════ ENVIRONMENT ═══════════════ */
+  const floor = new THREE.Mesh(
+    new THREE.PlaneGeometry(50, 50),
+    new THREE.MeshStandardMaterial({ color: 0x2a2838, roughness: 0.92 })
+  );
+  floor.rotation.x = -Math.PI / 2; floor.position.y = -0.55; floor.receiveShadow = true;
+  scene.add(floor);
+
+  const wall = new THREE.Mesh(
+    new THREE.PlaneGeometry(50, 20),
+    new THREE.MeshStandardMaterial({ color: 0x201e30, roughness: 0.95 })
+  );
+  wall.position.set(0, 8, -12); wall.receiveShadow = true;
+  scene.add(wall);
+
+  const shelf = new THREE.Mesh(
+    new THREE.BoxGeometry(8, 0.15, 0.6),
+    new THREE.MeshStandardMaterial({ color: 0x5c4a38, roughness: 0.8 })
+  );
+  shelf.position.set(-4, 5, -11.6); shelf.castShadow = true;
+  scene.add(shelf);
+
+  function makeDecoPot(x, y, z, s, c) {
+    const g = new THREE.Group();
+    const geo = new THREE.LatheGeometry([
+      new THREE.Vector2(0.01, 0), new THREE.Vector2(0.35*s, 0), new THREE.Vector2(0.4*s, 0.1),
+      new THREE.Vector2(0.38*s, 0.4), new THREE.Vector2(0.2*s, 0.6), new THREE.Vector2(0.22*s, 0.65),
+      new THREE.Vector2(0.22*s, 0.7),
+    ], 16);
+    const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: c, roughness: 0.75 }));
+    m.castShadow = true; g.add(m); g.position.set(x, y, z); return g;
+  }
+  scene.add(makeDecoPot(-5.5, 5.22, -11.4, 1, 0xb87850));
+  scene.add(makeDecoPot(-4.2, 5.18, -11.4, 0.7, 0xa06040));
+  scene.add(makeDecoPot(-3.0, 5.20, -11.4, 0.85, 0xc89060));
+
+  const bucket = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.45, 0.4, 0.55, 16, 1, true),
+    new THREE.MeshStandardMaterial({ color: 0x606878, roughness: 0.4, metalness: 0.6 })
+  );
+  bucket.position.set(3.8, -0.28, 1.5); bucket.castShadow = true;
+  scene.add(bucket);
+
+  const waterSurf = new THREE.Mesh(
+    new THREE.CircleGeometry(0.42, 16),
+    new THREE.MeshStandardMaterial({ color: 0x3a6080, roughness: 0.1, metalness: 0.3, transparent: true, opacity: 0.8 })
+  );
+  waterSurf.rotation.x = -Math.PI / 2; waterSurf.position.set(3.8, -0.02, 1.5);
+  scene.add(waterSurf);
+
+  const towel = new THREE.Mesh(
+    new THREE.PlaneGeometry(1.2, 0.8),
+    new THREE.MeshStandardMaterial({ color: 0x7a6a5a, roughness: 0.95, side: THREE.DoubleSide })
+  );
+  towel.rotation.x = -Math.PI / 2; towel.rotation.z = 0.3; towel.position.set(-3.5, -0.53, 2);
+  scene.add(towel);
+
+  /* ═══════════════ WORKSHOP ROOM DETAILS ═══════════════ */
+
+  // Side wall (left)
+  const sideWallL = new THREE.Mesh(
+    new THREE.PlaneGeometry(24, 20),
+    new THREE.MeshStandardMaterial({ color: 0x1e1c2c, roughness: 0.95 })
+  );
+  sideWallL.position.set(-12, 8, 0); sideWallL.rotation.y = Math.PI / 2; sideWallL.receiveShadow = true;
+  scene.add(sideWallL);
+
+  // Side wall (right)
+  const sideWallR = new THREE.Mesh(
+    new THREE.PlaneGeometry(24, 20),
+    new THREE.MeshStandardMaterial({ color: 0x1e1c2c, roughness: 0.95 })
+  );
+  sideWallR.position.set(12, 8, 0); sideWallR.rotation.y = -Math.PI / 2; sideWallR.receiveShadow = true;
+  scene.add(sideWallR);
+
+  // Second shelf (lower) on back wall
+  const shelf2 = new THREE.Mesh(
+    new THREE.BoxGeometry(10, 0.15, 0.6),
+    new THREE.MeshStandardMaterial({ color: 0x5c4a38, roughness: 0.8 })
+  );
+  shelf2.position.set(2, 3.2, -11.6); shelf2.castShadow = true;
+  scene.add(shelf2);
+
+  // Shelf brackets
+  function makeBracket(x, y, z) {
+    const g = new THREE.Group();
+    const v = new THREE.Mesh(
+      new THREE.BoxGeometry(0.06, 0.6, 0.06),
+      new THREE.MeshStandardMaterial({ color: 0x404040, roughness: 0.5, metalness: 0.6 })
+    );
+    v.position.set(0, -0.3, 0); g.add(v);
+    const h = new THREE.Mesh(
+      new THREE.BoxGeometry(0.06, 0.06, 0.3),
+      new THREE.MeshStandardMaterial({ color: 0x404040, roughness: 0.5, metalness: 0.6 })
+    );
+    h.position.set(0, -0.6, 0.12); g.add(h);
+    g.position.set(x, y, z); return g;
+  }
+  scene.add(makeBracket(-7, 5, -11.3));
+  scene.add(makeBracket(-1, 5, -11.3));
+  scene.add(makeBracket(-1.5, 3.2, -11.3));
+  scene.add(makeBracket(5.5, 3.2, -11.3));
+
+  // Finished glazed pots on lower shelf
+  const glazedPot1 = (function() {
+    const pts = [
+      new THREE.Vector2(0.01, 0), new THREE.Vector2(0.3, 0), new THREE.Vector2(0.38, 0.12),
+      new THREE.Vector2(0.35, 0.35), new THREE.Vector2(0.18, 0.55), new THREE.Vector2(0.25, 0.6),
+      new THREE.Vector2(0.28, 0.7), new THREE.Vector2(0.26, 0.8), new THREE.Vector2(0.32, 0.82),
+    ];
+    const g = new THREE.Group();
+    const m = new THREE.Mesh(
+      new THREE.LatheGeometry(pts, 20),
+      new THREE.MeshPhysicalMaterial({ color: 0x2874a6, roughness: 0.15, metalness: 0.0, clearcoat: 0.9, clearcoatRoughness: 0.1 })
+    );
+    m.castShadow = true; g.add(m); g.position.set(-1, 3.38, -11.4); return g;
+  })();
+  scene.add(glazedPot1);
+
+  const glazedPot2 = (function() {
+    const pts = [
+      new THREE.Vector2(0.01, 0), new THREE.Vector2(0.22, 0), new THREE.Vector2(0.28, 0.08),
+      new THREE.Vector2(0.32, 0.3), new THREE.Vector2(0.25, 0.5), new THREE.Vector2(0.15, 0.55),
+      new THREE.Vector2(0.18, 0.58), new THREE.Vector2(0.22, 0.7), new THREE.Vector2(0.2, 0.78),
+      new THREE.Vector2(0.28, 0.82),
+    ];
+    const g = new THREE.Group();
+    const m = new THREE.Mesh(
+      new THREE.LatheGeometry(pts, 20),
+      new THREE.MeshPhysicalMaterial({ color: 0xc0392b, roughness: 0.12, metalness: 0.0, clearcoat: 1.0, clearcoatRoughness: 0.05 })
+    );
+    m.castShadow = true; g.add(m); g.position.set(0.8, 3.35, -11.4); return g;
+  })();
+  scene.add(glazedPot2);
+
+  const glazedBowl = (function() {
+    const pts = [
+      new THREE.Vector2(0.01, 0), new THREE.Vector2(0.4, 0), new THREE.Vector2(0.5, 0.05),
+      new THREE.Vector2(0.55, 0.2), new THREE.Vector2(0.52, 0.35), new THREE.Vector2(0.48, 0.4),
+    ];
+    const g = new THREE.Group();
+    const m = new THREE.Mesh(
+      new THREE.LatheGeometry(pts, 24),
+      new THREE.MeshPhysicalMaterial({ color: 0xf5deb3, roughness: 0.2, metalness: 0.0, clearcoat: 0.7, clearcoatRoughness: 0.15 })
+    );
+    m.castShadow = true; g.add(m); g.position.set(3, 3.42, -11.4); return g;
+  })();
+  scene.add(glazedBowl);
+
+  // Hanging tools on left wall
+  function makeWireWallHook(x, y, z) {
+    const hook = new THREE.Mesh(
+      new THREE.TorusGeometry(0.06, 0.015, 8, 12, Math.PI),
+      new THREE.MeshStandardMaterial({ color: 0x505050, roughness: 0.4, metalness: 0.7 })
+    );
+    hook.position.set(x, y, z); hook.rotation.y = Math.PI / 2; hook.rotation.z = Math.PI; return hook;
+  }
+
+  const toolMat = new THREE.MeshStandardMaterial({ color: 0x8a7a68, roughness: 0.5, metalness: 0.3 });
+  const metalToolMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.2, metalness: 0.8 });
+
+  // Wooden rib tool
+  const ribTool = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.7, 0.15), toolMat);
+  ribTool.position.set(-11.93, 5.5, -0.5); ribTool.rotation.y = Math.PI / 2;
+  scene.add(ribTool); scene.add(makeWireWallHook(-11.96, 5.88, -0.5));
+
+  // Wire cutting tool
+  const wireTool = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.5, 0.03), toolMat);
+  wireTool.position.set(-11.93, 5.5, 0.5); wireTool.rotation.y = Math.PI / 2;
+  scene.add(wireTool); scene.add(makeWireWallHook(-11.96, 5.78, 0.5));
+  const wireLine = new THREE.Mesh(new THREE.BoxGeometry(0.005, 0.005, 0.4), metalToolMat);
+  wireLine.position.set(-11.85, 5.52, 0.5);
+  scene.add(wireLine);
+
+  // Needle tool
+  const needleHandle = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.025, 0.55, 8), toolMat);
+  needleHandle.position.set(-11.93, 4.4, -0.2); needleHandle.rotation.z = Math.PI / 2;
+  scene.add(needleHandle); scene.add(makeWireWallHook(-11.96, 4.42, -0.2));
+  const needleTip = new THREE.Mesh(new THREE.CylinderGeometry(0.003, 0.003, 0.2, 6), metalToolMat);
+  needleTip.position.set(-11.68, 4.4, -0.2); needleTip.rotation.z = Math.PI / 2;
+  scene.add(needleTip);
+
+  // Sponge on floor near wheel
+  const sponge = new THREE.Mesh(
+    new THREE.BoxGeometry(0.22, 0.08, 0.15),
+    new THREE.MeshStandardMaterial({ color: 0xc8b890, roughness: 0.95 })
+  );
+  sponge.position.set(2.5, -0.51, 2.8); sponge.rotation.y = 0.4;
+  scene.add(sponge);
+
+  // Second bucket (larger, for slip) near left
+  const slipBucket = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.55, 0.5, 0.7, 16, 1, true),
+    new THREE.MeshStandardMaterial({ color: 0x5a5060, roughness: 0.35, metalness: 0.6 })
+  );
+  slipBucket.position.set(-3.8, -0.2, 2.5); slipBucket.castShadow = true;
+  scene.add(slipBucket);
+  const slipSurf = new THREE.Mesh(
+    new THREE.CircleGeometry(0.52, 16),
+    new THREE.MeshStandardMaterial({ color: 0x8a7060, roughness: 0.8, transparent: true, opacity: 0.7 })
+  );
+  slipSurf.rotation.x = -Math.PI / 2; slipSurf.position.set(-3.8, 0.14, 2.5);
+  scene.add(slipSurf);
+
+  // Wooden stool
+  const stoolSeat = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.4, 0.4, 0.06, 16),
+    new THREE.MeshStandardMaterial({ color: 0x6a5040, roughness: 0.85 })
+  );
+  stoolSeat.position.set(5.5, 1.0, 3); stoolSeat.castShadow = true;
+  scene.add(stoolSeat);
+  for (let i = 0; i < 4; i++) {
+    const angle = (i / 4) * Math.PI * 2 + Math.PI / 4;
+    const leg = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.03, 0.035, 1.0, 8),
+      new THREE.MeshStandardMaterial({ color: 0x5a4232, roughness: 0.8 })
+    );
+    leg.position.set(5.5 + Math.cos(angle) * 0.25, 0.5, 3 + Math.sin(angle) * 0.25);
+    leg.castShadow = true;
+    scene.add(leg);
+  }
+
+  // Window on back wall (emissive glow)
+  const windowFrame = new THREE.Mesh(
+    new THREE.BoxGeometry(2.4, 3.0, 0.15),
+    new THREE.MeshStandardMaterial({ color: 0x3a3530, roughness: 0.7 })
+  );
+  windowFrame.position.set(6, 7, -11.9);
+  scene.add(windowFrame);
+  const windowGlow = new THREE.Mesh(
+    new THREE.PlaneGeometry(2.0, 2.6),
+    new THREE.MeshBasicMaterial({ color: 0xd4e8f0 })
+  );
+  windowGlow.position.set(6, 7, -11.82);
+  scene.add(windowGlow);
+  // Window cross bars
+  const barH = new THREE.Mesh(
+    new THREE.BoxGeometry(2.0, 0.06, 0.08),
+    new THREE.MeshStandardMaterial({ color: 0x3a3530, roughness: 0.7 })
+  );
+  barH.position.set(6, 7, -11.85);
+  scene.add(barH);
+  const barV = new THREE.Mesh(
+    new THREE.BoxGeometry(0.06, 2.6, 0.08),
+    new THREE.MeshStandardMaterial({ color: 0x3a3530, roughness: 0.7 })
+  );
+  barV.position.set(6, 7, -11.85);
+  scene.add(barV);
+
+  // Soft light from window
+  const windowLight = new THREE.RectAreaLight(0xc8dce8, 3, 2.0, 2.6);
+  windowLight.position.set(6, 7, -11.7);
+  windowLight.lookAt(6, 7, 0);
+  scene.add(windowLight);
+
+  // Kiln in the back-right corner (simplified box shape)
+  const kiln = new THREE.Group();
+  const kilnBody = new THREE.Mesh(
+    new THREE.BoxGeometry(1.8, 2.0, 1.6),
+    new THREE.MeshStandardMaterial({ color: 0x8a4030, roughness: 0.85 })
+  );
+  kilnBody.position.y = 1.0; kilnBody.castShadow = true;
+  kiln.add(kilnBody);
+  const kilnTop = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.6, 0.6, 0.15, 16),
+    new THREE.MeshStandardMaterial({ color: 0x606060, roughness: 0.5, metalness: 0.4 })
+  );
+  kilnTop.position.y = 2.05;
+  kiln.add(kilnTop);
+  const kilnDoor = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.9, 1.1),
+    new THREE.MeshStandardMaterial({ color: 0x302020, roughness: 0.9 })
+  );
+  kilnDoor.position.set(0, 0.85, 0.81);
+  kiln.add(kilnDoor);
+  const kilnGlow = new THREE.PointLight(0xff6030, 0.3, 5);
+  kilnGlow.position.set(0, 0.85, 1);
+  kiln.add(kilnGlow);
+  kiln.position.set(9, -0.55, -10.5);
+  scene.add(kiln);
+
+  // Ceramic supplies on floor near kiln
+  const supplyBag = new THREE.Mesh(
+    new THREE.BoxGeometry(0.5, 0.7, 0.3),
+    new THREE.MeshStandardMaterial({ color: 0x8a7a60, roughness: 0.9 })
+  );
+  supplyBag.position.set(8, -0.2, -7); supplyBag.rotation.y = 0.2; supplyBag.castShadow = true;
+  scene.add(supplyBag);
+
+  // Pegboard on left wall with pegs
+  const pegboard = new THREE.Mesh(
+    new THREE.PlaneGeometry(4, 3),
+    new THREE.MeshStandardMaterial({ color: 0x2a2838, roughness: 0.9 })
+  );
+  pegboard.position.set(-11.97, 7, -2); pegboard.rotation.y = Math.PI / 2;
+  scene.add(pegboard);
+  // Pegs
+  for (let r = 0; r < 3; r++) {
+    for (let c = 0; c < 5; c++) {
+      const peg = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.01, 0.01, 0.1, 6),
+        new THREE.MeshStandardMaterial({ color: 0x808080, roughness: 0.3, metalness: 0.7 })
+      );
+      peg.position.set(-11.93, 7.8 - r * 0.8, -3.2 + c * 0.8);
+      peg.rotation.z = Math.PI / 2;
+      scene.add(peg);
+    }
+  }
+
+  // Clay bag on floor
+  const clayBag = new THREE.Mesh(
+    new THREE.BoxGeometry(0.6, 0.4, 0.4),
+    new THREE.MeshStandardMaterial({ color: 0x9a8a70, roughness: 0.95 })
+  );
+  clayBag.position.set(-3, -0.35, 3.5); clayBag.castShadow = true;
+  scene.add(clayBag);
+
+  // Scattered clay lumps on floor
+  for (let i = 0; i < 5; i++) {
+    const lump = new THREE.Mesh(
+      new THREE.SphereGeometry(0.08 + Math.random() * 0.06, 8, 8),
+      new THREE.MeshStandardMaterial({ color: 0xb0845a, roughness: 0.9 })
+    );
+    lump.position.set(
+      -3 + Math.random() * 1.5,
+      -0.47,
+      3.2 + Math.random() * 1.2
+    );
+    lump.scale.y = 0.6; lump.castShadow = true;
+    scene.add(lump);
+  }
+
+  /* ═══════════════ TABLE / WHEEL ═══════════════ */
+  const tableGroup = new THREE.Group();
+
+  const baseMesh = new THREE.Mesh(
+    new THREE.CylinderGeometry(1.4, 1.6, 1.2, 24),
+    new THREE.MeshStandardMaterial({ color: 0x484448, roughness: 0.35, metalness: 0.7 })
+  );
+  baseMesh.position.y = -0.1; baseMesh.castShadow = true; baseMesh.receiveShadow = true;
+  tableGroup.add(baseMesh);
+
+  const colMesh = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.6, 0.8, 0.6, 16),
+    new THREE.MeshStandardMaterial({ color: 0x504c50, roughness: 0.4, metalness: 0.6 })
+  );
+  colMesh.position.y = 0.8; colMesh.castShadow = true;
+  tableGroup.add(colMesh);
+
+  const topMesh = new THREE.Mesh(
+    new THREE.CylinderGeometry(3.0, 3.0, 0.18, 36),
+    new THREE.MeshStandardMaterial({ color: 0x6a5a48, roughness: 0.72, metalness: 0.05 })
+  );
+  topMesh.position.y = 1.1; topMesh.castShadow = true; topMesh.receiveShadow = true;
+  tableGroup.add(topMesh);
+
+  const wheelDisc = new THREE.Mesh(
+    new THREE.CylinderGeometry(2.5, 2.5, 0.08, 48),
+    new THREE.MeshStandardMaterial({ color: 0x787068, roughness: 0.45, metalness: 0.5 })
+  );
+  wheelDisc.position.y = 1.22; wheelDisc.castShadow = true; wheelDisc.receiveShadow = true;
+  tableGroup.add(wheelDisc);
+
+  const wheelRim = new THREE.Mesh(
+    new THREE.TorusGeometry(2.5, 0.05, 8, 48),
+    new THREE.MeshStandardMaterial({ color: 0x605850, roughness: 0.4, metalness: 0.55 })
+  );
+  wheelRim.position.y = 1.26; wheelRim.rotation.x = Math.PI / 2;
+  tableGroup.add(wheelRim);
+
+  const grooveStartIdx = tableGroup.children.length;
+  for (let r = 0.5; r <= 2.3; r += 0.4) {
+    const groove = new THREE.Mesh(
+      new THREE.TorusGeometry(r, 0.012, 6, 48),
+      new THREE.MeshStandardMaterial({ color: 0x6a6258, roughness: 0.5, metalness: 0.5 })
+    );
+    groove.position.y = 1.26; groove.rotation.x = Math.PI / 2;
+    tableGroup.add(groove);
+  }
+  const grooveEndIdx = tableGroup.children.length;
+
+  const pedal = new THREE.Mesh(
+    new THREE.BoxGeometry(0.8, 0.08, 0.4),
+    new THREE.MeshStandardMaterial({ color: 0x403c40, roughness: 0.5, metalness: 0.5 })
+  );
+  pedal.position.set(0, -0.53, 3.0); pedal.rotation.x = 0.1; pedal.castShadow = true;
+  tableGroup.add(pedal);
+  scene.add(tableGroup);
+
+  /* ═══════════════ CLAY ═══════════════ */
+  const clayMaterial = new THREE.MeshPhysicalMaterial({
+    color: 0xffffff, // white base, tinted via vertex colors
+    roughness: 0.65,
+    metalness: 0.0,
+    clearcoat: 0.0,
+    clearcoatRoughness: 0.8,
+    vertexColors: true,
+    side: THREE.DoubleSide,
+  });
+
+  function updateClayMaterial() {
+    const w = wetness;
+    clayMaterial.roughness = 0.65 - w * 0.45;
+    clayMaterial.clearcoat = w * 0.5;
+    clayMaterial.clearcoatRoughness = 0.8 - w * 0.5;
+  }
+
+  function getDefaultColor() {
+    const dryR = 0xb8 / 255, dryG = 0x84 / 255, dryB = 0x5a / 255;
+    const s = wetness * 0.15;
+    return { r: dryR * (1 - s), g: dryG * (1 - s), b: dryB * (1 - s) };
+  }
+
+  function generateDefaultProfile(amount) {
+    const baseRadius = 0.7 + amount * 1.1;
+    const baseHeight = 0.8 + amount * 2.8;
+    const pts = [];
+    for (let i = 0; i <= PROFILE_SEGMENTS; i++) {
+      const t = i / PROFILE_SEGMENTS;
+      let r, h;
+      if (t < 0.04) { r = t / 0.04 * baseRadius * 0.5; h = 0; }
+      else if (t < 0.10) {
+        const lt = (t - 0.04) / 0.06;
+        r = baseRadius * (0.5 + lt * 0.55); h = lt * baseHeight * 0.04;
+      } else if (t < 0.82) {
+        const lt = (t - 0.10) / 0.72;
+        r = baseRadius * (1.05 + Math.sin(lt * Math.PI) * 0.18);
+        h = (0.04 + lt * 0.84) * baseHeight;
+      } else if (t < 0.93) {
+        const lt = (t - 0.82) / 0.11;
+        r = baseRadius * (1.05 - lt * 0.35); h = (0.88 + lt * 0.06) * baseHeight;
+      } else {
+        const lt = (t - 0.93) / 0.07;
+        r = baseRadius * (0.70 + lt * 0.08); h = (0.94 + lt * 0.06) * baseHeight;
+      }
+      pts.push({ radius: Math.max(0.02, r), height: h });
+    }
+    return pts;
+  }
+
+  function profileToVectors(pts) {
+    return pts.map(p => new THREE.Vector2(p.radius, p.height));
+  }
+
+  let clayMesh = null;
+  const clayGroup = new THREE.Group();
+  clayGroup.position.y = 1.26;
+  scene.add(clayGroup);
+
+  // Initialize 2D color map
+  function initColorMap() {
+    const totalVerts = (PROFILE_SEGMENTS + 1) * (LATHE_SEGMENTS + 1);
+    colorMap = new Array(totalVerts).fill(null);
+  }
+
+  function rebuildClay() {
+    if (clayMesh) {
+      clayGroup.remove(clayMesh);
+      clayMesh.geometry.dispose();
+    }
+    const vecs = profileToVectors(profile);
+    const geo = new THREE.LatheGeometry(vecs, LATHE_SEGMENTS);
+    geo.computeVertexNormals();
+
+    const count = geo.attributes.position.count;
+    const colors = new Float32Array(count * 3);
+    const defCol = getDefaultColor();
+
+    const vertsPerSeg = PROFILE_SEGMENTS + 1;
+    for (let s = 0; s <= LATHE_SEGMENTS; s++) {
+      for (let p = 0; p <= PROFILE_SEGMENTS; p++) {
+        const vi = s * vertsPerSeg + p;
+        if (vi >= count) break;
+        if (colorMap && colorMap[vi]) {
+          colors[vi * 3] = colorMap[vi].r;
+          colors[vi * 3 + 1] = colorMap[vi].g;
+          colors[vi * 3 + 2] = colorMap[vi].b;
+        } else {
+          colors[vi * 3] = defCol.r;
+          colors[vi * 3 + 1] = defCol.g;
+          colors[vi * 3 + 2] = defCol.b;
+        }
+      }
+    }
+    geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+    clayMesh = new THREE.Mesh(geo, clayMaterial);
+    clayMesh.castShadow = true;
+    clayMesh.receiveShadow = true;
+    clayGroup.add(clayMesh);
+  }
+
+  // Fast color-only update (no geometry rebuild)
+  function updateVertexColors() {
+    if (!clayMesh) return;
+    const colorAttr = clayMesh.geometry.attributes.color;
+    if (!colorAttr) return;
+    const defCol = getDefaultColor();
+    const vertsPerSeg = PROFILE_SEGMENTS + 1;
+    const count = colorAttr.count;
+    for (let s = 0; s <= LATHE_SEGMENTS; s++) {
+      for (let p = 0; p <= PROFILE_SEGMENTS; p++) {
+        const vi = s * vertsPerSeg + p;
+        if (vi >= count) break;
+        if (colorMap && colorMap[vi]) {
+          colorAttr.setXYZ(vi, colorMap[vi].r, colorMap[vi].g, colorMap[vi].b);
+        } else {
+          colorAttr.setXYZ(vi, defCol.r, defCol.g, defCol.b);
+        }
+      }
+    }
+    colorAttr.needsUpdate = true;
+  }
+
+  function initClay() {
+    profile = generateDefaultProfile(clayAmount);
+    wetness = 1.0;
+    initColorMap();
+    updateClayMaterial();
+    rebuildClay();
+  }
+
+  initClay();
+
+  /* ═══════════════ WATER EFFECTS ═══════════════ */
+  const dripRings = [];
+  function spawnDripRing() {
+    const r = 1.0 + Math.random() * 1.5;
+    const geo = new THREE.RingGeometry(Math.max(0.01, r - 0.01), r + 0.01, 48);
+    const mat = new THREE.MeshBasicMaterial({ color: 0x5588aa, transparent: true, opacity: 0.25, side: THREE.DoubleSide });
+    const ring = new THREE.Mesh(geo, mat);
+    ring.rotation.x = -Math.PI / 2; ring.position.y = 1.27; ring.userData.life = 1.0;
+    scene.add(ring); dripRings.push(ring);
+  }
+  function updateDripRings(dt) {
+    for (let i = dripRings.length - 1; i >= 0; i--) {
+      const r = dripRings[i];
+      r.userData.life -= dt * 0.8;
+      if (r.userData.life <= 0) {
+        scene.remove(r); r.geometry.dispose(); r.material.dispose();
+        dripRings.splice(i, 1); continue;
+      }
+      r.material.opacity = r.userData.life * 0.2;
+      r.scale.setScalar(1 + (1 - r.userData.life) * 0.3);
+    }
+  }
+
+  const splashParticles = [];
+  const splashGeo = new THREE.SphereGeometry(0.025, 6, 6);
+  const splashBaseMat = new THREE.MeshPhysicalMaterial({ color: 0x88bbdd, roughness: 0.05, metalness: 0.1, transparent: true, opacity: 0.7 });
+  function spawnSplash(worldPos, count) {
+    for (let i = 0; i < (count || 4); i++) {
+      const p = new THREE.Mesh(splashGeo, splashBaseMat.clone());
+      p.position.copy(worldPos);
+      const speed = 0.03 + Math.random() * 0.04;
+      const angle = Math.random() * Math.PI * 2;
+      p.userData.vel = new THREE.Vector3(Math.cos(angle)*speed, 0.02+Math.random()*0.04, Math.sin(angle)*speed);
+      p.userData.life = 1.0;
+      scene.add(p); splashParticles.push(p);
+    }
+  }
+  function updateSplash(dt) {
+    for (let i = splashParticles.length - 1; i >= 0; i--) {
+      const p = splashParticles[i];
+      p.userData.life -= dt * 1.8;
+      if (p.userData.life <= 0) {
+        scene.remove(p); p.material.dispose(); splashParticles.splice(i, 1); continue;
+      }
+      p.position.add(p.userData.vel);
+      p.userData.vel.y -= 0.0015;
+      p.material.opacity = p.userData.life * 0.6;
+      p.scale.setScalar(0.5 + p.userData.life * 0.5);
+    }
+  }
+
+  /* ═══════════════ INTERACTION ═══════════════ */
+  const raycaster = new THREE.Raycaster();
+  const mouseVec = new THREE.Vector2();
+  let dragStartWorld = null;
+  let dragStartProfile = null;
+
+  function getMousePos(event) {
+    const rect = renderer.domElement.getBoundingClientRect();
+    let cx, cy;
+    if (event.touches && event.touches.length > 0) {
+      cx = event.touches[0].clientX; cy = event.touches[0].clientY;
+    } else {
+      cx = event.clientX; cy = event.clientY;
+    }
+    return {
+      x: ((cx - rect.left) / rect.width) * 2 - 1,
+      y: -((cy - rect.top) / rect.height) * 2 + 1,
+      clientX: cx, clientY: cy
+    };
+  }
+
+  /**
+   * Find both profile index and segment index from a world-space hit point.
+   * Accounts for the current wheel rotation to map back to the static lathe geometry coordinates.
+   */
+  function findHitUV(worldPoint) {
+    // Transform hit into clayGroup local space
+    const local = clayGroup.worldToLocal(worldPoint.clone());
+    // Undo the wheel rotation (clayMesh.rotation.y = wheelAngle)
+    const angle = Math.atan2(local.z, local.x);
+    const radius = Math.sqrt(local.x * local.x + local.z * local.z);
+    // local angle relative to the rotating mesh
+    // The mesh is rotated by wheelAngle, so the "unrotated" angle is:
+    const unrotatedAngle = angle - wheelAngle;
+    // Normalize to [0, 2*PI]
+    const normAngle = ((unrotatedAngle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+    // Map to segment index (0..LATHE_SEGMENTS)
+    const segFloat = (normAngle / (Math.PI * 2)) * LATHE_SEGMENTS;
+    const segIdx = Math.round(segFloat) % (LATHE_SEGMENTS + 1);
+
+    // Find profile index by height
+    const hitHeight = local.y;
+    let bestIdx = 0, bestDist = Infinity;
+    for (let i = 0; i < profile.length; i++) {
+      const d = Math.abs(profile[i].height - hitHeight);
+      if (d < bestDist) { bestDist = d; bestIdx = i; }
+    }
+    return { profileIdx: bestIdx, segIdx: segIdx };
+  }
+
+  /**
+   * Paint at a specific (profile, segment) coordinate.
+   * Center of brush = fully opaque paint color.
+   * Edge only = soft blend into clay.
+   */
+  function applyPaintAt(profileIdx, segIdx) {
+    const paintCol = new THREE.Color(paintColorHex);
+    const vertsPerSeg = PROFILE_SEGMENTS + 1;
+    const hBrush = paintBrushSize;
+    const aBrush = Math.max(1, Math.round(paintBrushSize * (LATHE_SEGMENTS / PROFILE_SEGMENTS)));
+
+    for (let dp = -hBrush; dp <= hBrush; dp++) {
+      const pi = profileIdx + dp;
+      if (pi < 0 || pi > PROFILE_SEGMENTS) continue;
+      for (let ds = -aBrush; ds <= aBrush; ds++) {
+        let si = ((segIdx + ds) % (LATHE_SEGMENTS + 1) + (LATHE_SEGMENTS + 1)) % (LATHE_SEGMENTS + 1);
+        const vi = si * vertsPerSeg + pi;
+        if (vi < 0 || vi >= colorMap.length) continue;
+
+        // 2D normalized distance
+        const distH = Math.abs(dp) / hBrush;
+        const rawDs = Math.abs(ds);
+        const wrapDs = LATHE_SEGMENTS + 1 - rawDs;
+        const distS = Math.min(rawDs, wrapDs) / aBrush;
+        const dist2D = Math.sqrt(distH * distH + distS * distS);
+        if (dist2D > 1) continue;
+
+        // Inside brush = exact paint color, period.
+        colorMap[vi] = paintCol.clone();
+      }
+    }
+    updateVertexColors();
+  }
+
+  function onPointerDown(event) {
+    if (!gameStarted || !clayMesh) return;
+    const pos = getMousePos(event);
+    mouseVec.set(pos.x, pos.y);
+    raycaster.setFromCamera(mouseVec, camera);
+    const hits = raycaster.intersectObject(clayMesh);
+    if (hits.length > 0) {
+      isDragging = true;
+      lastMouse = { x: pos.clientX, y: pos.clientY };
+      dragStartWorld = hits[0].point.clone();
+
+      if (paintMode) {
+        const uv = findHitUV(hits[0].point);
+        applyPaintAt(uv.profileIdx, uv.segIdx);
+      } else {
+        const uv = findHitUV(hits[0].point);
+        dragStartProfile = { index: uv.profileIdx, originalRadius: profile[uv.profileIdx].radius };
+        renderer.domElement.style.cursor = 'grabbing';
+      }
+    }
+  }
+
+  function onPointerMove(event) {
+    if (!isDragging || !dragStartWorld) return;
+    event.preventDefault();
+    const pos = getMousePos(event);
+    const dx = pos.clientX - lastMouse.x;
+    const dy = pos.clientY - lastMouse.y;
+    lastMouse = { x: pos.clientX, y: pos.clientY };
+
+    if (paintMode) {
+      mouseVec.set(pos.x, pos.y);
+      raycaster.setFromCamera(mouseVec, camera);
+      const hits = raycaster.intersectObject(clayMesh);
+      if (hits.length > 0) {
+        const uv = findHitUV(hits[0].point);
+        applyPaintAt(uv.profileIdx, uv.segIdx);
+      }
+    } else {
+      if (!dragStartProfile) return;
+      const radialDelta = dx * 0.010;
+      const heightDelta = -dy * 0.006;
+      const centerIdx = dragStartProfile.index;
+      const brushSize = 6;
+      for (let i = 0; i < profile.length; i++) {
+        const dist = Math.abs(i - centerIdx);
+        if (dist > brushSize) continue;
+        const falloff = 1 - (dist / brushSize);
+        const smooth = falloff * falloff * (3 - 2 * falloff);
+        profile[i].radius = Math.max(0.04, profile[i].radius + radialDelta * smooth);
+        if (i > 2 && i < profile.length - 2) {
+          profile[i].height = Math.max(0.01, profile[i].height + heightDelta * smooth * 0.3);
+        }
+      }
+      rebuildClay();
+      if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+        wetness = Math.max(0, wetness - 0.001);
+        updateClayMaterial();
+        wetnessFill.style.width = (wetness * 100) + '%';
+      }
+      if (Math.abs(dx) > 2 && wheelSpeed > 0.05) {
+        spawnSplash(dragStartWorld, 3);
+      }
+    }
+  }
+
+  function onPointerUp() {
+    if (isDragging) {
+      isDragging = false;
+      dragStartWorld = null;
+      dragStartProfile = null;
+      renderer.domElement.style.cursor = paintMode ? 'crosshair' : 'default';
+    }
+  }
+
+  renderer.domElement.addEventListener('mousedown', onPointerDown);
+  window.addEventListener('mousemove', onPointerMove);
+  window.addEventListener('mouseup', onPointerUp);
+  renderer.domElement.addEventListener('touchstart', (e) => { e.preventDefault(); onPointerDown(e); }, { passive: false });
+  window.addEventListener('touchmove', (e) => { onPointerMove(e); }, { passive: false });
+  window.addEventListener('touchend', onPointerUp);
+  renderer.domElement.style.cursor = 'default';
+
+  /* ═══════════════ UI EVENTS ═══════════════ */
+  function showToast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastEl._timer);
+    toastEl._timer = setTimeout(() => toastEl.classList.remove('show'), 2500);
+  }
+
+  startBtn.addEventListener('click', () => {
+    if (!gameStarted) {
+      gameStarted = true;
+      startBtn.textContent = 'Reset';
+      startBtn.classList.remove('start-off');
+      startBtn.classList.add('start-on');
+      instructionsEl.style.opacity = '0';
+      wetnessBar.classList.add('visible');
+      wetness = 1.0; updateClayMaterial();
+      showToast('Wheel spinning — drag on clay to shape, or use Paint mode!');
+    } else {
+      gameStarted = false;
+      startBtn.textContent = 'Start';
+      startBtn.classList.remove('start-on');
+      startBtn.classList.add('start-off');
+      instructionsEl.style.opacity = '1';
+      wetnessBar.classList.remove('visible');
+      clayAmount = claySliderValue / 100;
+      if (paintMode) togglePaintMode();
+      initClay();
+      showToast('Reset — adjust settings and press Start!');
+    }
+  });
+
+  function applyWater() {
+    if (!gameStarted) return;
+    wetness = 1.0; updateClayMaterial();
+    wetnessFill.style.width = '100%';
+    const pos = new THREE.Vector3(0, 1.26 + profile[profile.length * 0.7 | 0].height * 0.5, 0);
+    spawnSplash(pos, 12);
+    for (let i = 0; i < 3; i++) setTimeout(() => spawnDripRing(), i * 200);
+    showToast('Water applied!');
+    // Rebuild to refresh default colors under paint
+    rebuildClay();
+  }
+
+  /* ═══════════════ ENVIRONMENT PARTICLES ═══════════════ */
+  const dustCount = 150;
+  const dustGeo = new THREE.BufferGeometry();
+  const dustPositions = new Float32Array(dustCount * 3);
+  for (let i = 0; i < dustCount; i++) {
+    dustPositions[i*3] = (Math.random()-0.5)*20;
+    dustPositions[i*3+1] = Math.random()*10;
+    dustPositions[i*3+2] = (Math.random()-0.5)*20;
+  }
+  dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPositions, 3));
+  const dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({ color: 0xd4c4a0, size: 0.03, transparent: true, opacity: 0.3, sizeAttenuation: true }));
+  scene.add(dust);
+
+  /* ═══════════════ ANIMATION LOOP ═══════════════ */
+  let prevTime = performance.now();
+  let dripTimer = 0;
+
+  function animate() {
+    requestAnimationFrame(animate);
+    const now = performance.now();
+    const dt = Math.min((now - prevTime) / 1000, 0.1);
+    prevTime = now;
+
+    if (keysDown['ArrowLeft'] || keysDown['KeyA']) { camTheta -= CAM_SPEED * dt; updateCameraPosition(); }
+    if (keysDown['ArrowRight'] || keysDown['KeyD']) { camTheta += CAM_SPEED * dt; updateCameraPosition(); }
+    if (keysDown['ArrowUp'] || keysDown['KeyW']) { camPhi = Math.max(0.15, camPhi - CAM_SPEED * dt * 0.6); updateCameraPosition(); }
+    if (keysDown['ArrowDown'] || keysDown['KeyS']) { camPhi = Math.min(Math.PI/2-0.08, camPhi + CAM_SPEED * dt * 0.6); updateCameraPosition(); }
+
+    if (gameStarted && wheelSpeed > 0.001) {
+      wheelAngle += wheelSpeed * 5.0 * dt;
+      wheelDisc.rotation.y = wheelAngle;
+      wheelRim.rotation.z = wheelAngle;
+      for (let i = grooveStartIdx; i < grooveEndIdx; i++) {
+        if (tableGroup.children[i]) tableGroup.children[i].rotation.z = wheelAngle;
+      }
+      if (clayMesh) clayMesh.rotation.y = wheelAngle;
+      dripTimer += dt;
+      if (wetness > 0.3 && dripTimer > 1.5 / wheelSpeed) { dripTimer = 0; spawnDripRing(); }
+    }
+
+    if (gameStarted && wheelSpeed > 0.1) {
+      wetness = Math.max(0, wetness - dt * 0.015 * wheelSpeed);
+      updateClayMaterial();
+      wetnessFill.style.width = (wetness * 100) + '%';
+    }
+
+    const dPos = dustGeo.attributes.position.array;
+    for (let i = 0; i < dustCount; i++) {
+      dPos[i*3+1] += dt * 0.08;
+      if (dPos[i*3+1] > 10) dPos[i*3+1] = 0;
+      dPos[i*3] += Math.sin(now * 0.0002 + i * 0.5) * dt * 0.015;
+    }
+    dustGeo.attributes.position.needsUpdate = true;
+
+    updateSplash(dt);
+    updateDripRings(dt);
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+})();
+</script>
+</body>
+</html>
