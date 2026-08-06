@@ -211,6 +211,103 @@
     opacity:0;transition:opacity .3s;
   }
   #paint-indicator.visible{opacity:1}
+
+  /* ═══ Mobile Responsive ═══ */
+  :root {
+    --is-mobile: 0;
+  }
+  body.is-mobile {
+    --is-mobile: 1;
+  }
+  body.is-mobile #toolbar {
+    top:auto;bottom:80px;left:8px;right:8px;
+    transform:none;gap:4px;padding:6px 8px;
+    border-radius:16px;max-width:none;width:auto;
+    justify-content:center;flex-wrap:nowrap;
+  }
+  body.is-mobile .tb-btn {
+    width:48px;height:48px;font-size:20px;
+    -webkit-tap-highlight-color:transparent;
+  }
+  body.is-mobile .tb-btn.wide {
+    padding:0 18px;font-size:13px;min-width:80px;
+  }
+  body.is-mobile .tb-btn .tb-label { display:none; }
+  body.is-mobile .paint-swatch { width:16px;height:16px;bottom:5px;right:5px; }
+  body.is-mobile .tb-sep { margin:4px 1px; }
+
+  body.is-mobile #side-panel {
+    width:100%;right:-100%;border-left:none;
+    border-top:1px solid rgba(255,255,255,0.06);
+  }
+  body.is-mobile #side-panel.open { right:0; }
+  body.is-mobile .panel-header { padding:16px 20px 14px; }
+  body.is-mobile .panel-header h2 { font-size:16px; }
+  body.is-mobile .panel-body { padding:16px 20px 120px; }
+  body.is-mobile .panel-section { margin-bottom:22px; }
+  body.is-mobile .panel-section-title { font-size:11px; margin-bottom:12px; }
+  body.is-mobile .panel-slider-row label { min-width:60px;font-size:13px; }
+  body.is-mobile .panel-slider-row input[type="range"]::-webkit-slider-thumb { width:22px;height:22px; }
+  body.is-mobile .panel-slider-row input[type="range"]::-moz-range-thumb { width:22px;height:22px; }
+  body.is-mobile .panel-action-btn { padding:14px;font-size:14px; }
+  body.is-mobile .paint-presets { gap:8px; }
+  body.is-mobile .paint-preset { width:34px;height:34px;border-radius:8px; }
+  body.is-mobile .toggle-switch { width:50px;height:28px; }
+  body.is-mobile .toggle-switch::after { width:22px;height:22px;top:3px;left:3px; }
+  body.is-mobile .toggle-switch.on::after { transform:translateX(22px); }
+  body.is-mobile .paint-row label { min-width:55px;font-size:13px; }
+  body.is-mobile .paint-color-input-wrap { padding:6px 12px; }
+  body.is-mobile .paint-color-input-wrap input[type="color"] { width:34px;height:34px; }
+  body.is-mobile .paint-color-input-wrap input[type="text"] { font-size:15px; }
+  body.is-mobile .brush-preview { width:48px;height:48px; }
+
+  body.is-mobile #instructions {
+    bottom:auto;top:12px;left:12px;right:12px;
+    transform:none;font-size:12px;padding:10px 16px;
+    max-width:none;
+  }
+  body.is-mobile #instructions kbd { display:none; }
+
+  body.is-mobile #toast {
+    top:60px;font-size:14px;padding:12px 24px;
+  }
+
+  body.is-mobile #camera-hint { display:none; }
+  body.is-mobile #wetness-bar {
+    bottom:148px;left:16px;
+  }
+  body.is-mobile #wetness-track { width:100px; }
+
+  body.is-mobile #paint-indicator {
+    top:auto;bottom:148px;font-size:12px;padding:8px 16px;
+  }
+
+  /* Mobile camera joystick */
+  #mobile-camera-pad {
+    display:none;position:fixed;bottom:160px;right:16px;z-index:12;
+    width:120px;height:120px;
+  }
+  body.is-mobile #mobile-camera-pad { display:block; }
+  #cam-pad-bg {
+    position:absolute;inset:0;border-radius:50%;
+    background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);
+  }
+  #cam-pad-thumb {
+    position:absolute;width:44px;height:44px;border-radius:50%;
+    background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.2);
+    top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;
+    transition:transform .05s;
+  }
+  #cam-pad-arrows {
+    position:absolute;inset:0;pointer-events:none;
+  }
+  #cam-pad-arrows span {
+    position:absolute;font-size:14px;color:rgba(255,255,255,0.25);
+  }
+  #cam-pad-arrows .arr-up { top:6px;left:50%;transform:translateX(-50%); }
+  #cam-pad-arrows .arr-down { bottom:6px;left:50%;transform:translateX(-50%); }
+  #cam-pad-arrows .arr-left { left:6px;top:50%;transform:translateY(-50%); }
+  #cam-pad-arrows .arr-right { right:6px;top:50%;transform:translateY(-50%); }
 </style>
 </head>
 <body>
@@ -265,11 +362,26 @@
   <div id="wetness-track"><div id="wetness-fill"></div></div>
 </div>
 
+<div id="mobile-camera-pad">
+  <div id="cam-pad-bg"></div>
+  <div id="cam-pad-thumb"></div>
+  <div id="cam-pad-arrows">
+    <span class="arr-up">&#9650;</span>
+    <span class="arr-down">&#9660;</span>
+    <span class="arr-left">&#9664;</span>
+    <span class="arr-right">&#9654;</span>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 (() => {
+  /* ═══════════════ MOBILE DETECTION ═══════════════ */
+  const isMobile = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+    || ('ontouchstart' in window && window.innerWidth < 1024);
+  if (isMobile) document.body.classList.add('is-mobile');
   /* ═══════════════ STATE ═══════════════ */
   let gameStarted = false;
   let wheelSpeed = 0.3;
@@ -292,9 +404,10 @@
   let activePanel = null;
 
   /* Camera orbit */
-  let camTheta = 0, camPhi = 0.42, camRadius = 10;
-  const CAM_MIN_R = 5, CAM_MAX_R = 18, CAM_SPEED = 1.6;
+  let camTheta = 0, camPhi = 0.42, camRadius = isMobile ? 12 : 10;
+  const CAM_MIN_R = 5, CAM_MAX_R = 18, CAM_SPEED = isMobile ? 2.0 : 1.6;
   const keysDown = {};
+  let mobileCamDrag = { active: false, startX: 0, startY: 0, lastX: 0, lastY: 0 };
 
   /* ═══════════════ DOM ═══════════════ */
   const container = document.getElementById('canvas-container');
@@ -1280,6 +1393,61 @@
   window.addEventListener('touchmove', (e) => { onPointerMove(e); }, { passive: false });
   window.addEventListener('touchend', onPointerUp);
   renderer.domElement.style.cursor = 'default';
+
+  /* ═══════════════ MOBILE CAMERA JOYSTICK ═══════════════ */
+  if (isMobile) {
+    const camPad = document.getElementById('mobile-camera-pad');
+    const camThumb = document.getElementById('cam-pad-thumb');
+    let camPadTouchId = null;
+    const padRadius = 60; // half of 120px
+
+    camPad.addEventListener('touchstart', (e) => {
+      e.preventDefault(); e.stopPropagation();
+      if (camPadTouchId !== null) return;
+      const t = e.changedTouches[0];
+      camPadTouchId = t.identifier;
+      mobileCamDrag.active = true;
+      mobileCamDrag.startX = t.clientX;
+      mobileCamDrag.startY = t.clientY;
+      mobileCamDrag.lastX = t.clientX;
+      mobileCamDrag.lastY = t.clientY;
+    }, { passive: false });
+
+    camPad.addEventListener('touchmove', (e) => {
+      e.preventDefault(); e.stopPropagation();
+      for (let t of e.changedTouches) {
+        if (t.identifier !== camPadTouchId) continue;
+        const dx = t.clientX - mobileCamDrag.startX;
+        const dy = t.clientY - mobileCamDrag.startY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const clampDist = Math.min(dist, padRadius);
+        const angle = Math.atan2(dy, dx);
+        const cx = Math.cos(angle) * clampDist;
+        const cy = Math.sin(angle) * clampDist;
+        camThumb.style.transform = 'translate(calc(-50% + ' + cx + 'px), calc(-50% + ' + cy + 'px))';
+
+        // Apply camera orbit from drag delta
+        const ddx = t.clientX - mobileCamDrag.lastX;
+        const ddy = t.clientY - mobileCamDrag.lastY;
+        camTheta += ddx * 0.01;
+        camPhi = Math.max(0.15, Math.min(Math.PI / 2 - 0.08, camPhi - ddy * 0.006));
+        updateCameraPosition();
+        mobileCamDrag.lastX = t.clientX;
+        mobileCamDrag.lastY = t.clientY;
+      }
+    }, { passive: false });
+
+    const resetCamPad = (e) => {
+      for (let t of e.changedTouches) {
+        if (t.identifier !== camPadTouchId) continue;
+        camPadTouchId = null;
+        mobileCamDrag.active = false;
+        camThumb.style.transform = 'translate(-50%, -50%)';
+      }
+    };
+    camPad.addEventListener('touchend', resetCamPad);
+    camPad.addEventListener('touchcancel', resetCamPad);
+  }
 
   /* ═══════════════ UI EVENTS ═══════════════ */
   function showToast(msg) {
