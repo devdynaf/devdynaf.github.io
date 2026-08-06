@@ -1,10 +1,10 @@
 # DYNAF.GAMES
 
-**Free browser minigames — no download, no account, just play.**
+**Free browser minigames — no download, no account, just fun and games.**
 
  **Play now:** [devdynaf.github.io](https://devdynaf.github.io)
 
-DYNAF.GAMES is a small, growing collection of browser-based games built with vanilla HTML5, CSS, and JavaScript. Every game runs instantly in your browser — desktop or mobile, no installs, no sign-up, no ads getting in the way.
+DYNAF.GAMES is a small, growing collection of browser-based games built with vanilla HTML5, CSS, and JavaScript. Every game runs instantly in your browser — desktop or mobile(although some ones may be platform specific), no installs, no sign-up, no ads getting in the way.
 
 ---
 
