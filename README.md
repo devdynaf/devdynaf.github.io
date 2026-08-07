@@ -1,6 +1,6 @@
 # DYNAF.GAMES
 
-**Free browser minigames — no download, no account, just fun and games.**
+**Free browser minigames — no download, no account, just fun with games.**
 
  **Play now:** [devdynaf.github.io](https://devdynaf.github.io)
 
