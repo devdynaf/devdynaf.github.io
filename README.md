@@ -59,22 +59,6 @@ devdynaf.github.io/
 
 ---
 
-##  Running Locally
-
-No build tools needed — it's all static HTML/CSS/JS.
-
-```bash
-git clone https://github.com/devdynaf/devdynaf.github.io.git
-cd devdynaf.github.io
-# then just open index.html in your browser,
-# or serve it locally:
-python3 -m http.server 8000
-```
-
-Then visit `http://localhost:8000` in your browser.
-
----
-
 ##  Roadmap
 
 More browser games are in active development, including physics-based and arcade-style titles. Star ⭐ the repo or check back at [devdynaf.github.io](https://devdynaf.github.io) to see what's new.
