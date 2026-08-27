@@ -20,6 +20,11 @@ A falling-sand physics sandbox. Simulate fire, water, oil, lava, acid, and more,
 
 **Tags:** physics sandbox · particle simulation · falling sand game
 
+### [Clay 3D](https://devdynaf.github.io/clay-3d/)
+A virtual pottery wheel that lets you squish, shape, and paint your own 3D ceramic models by clicking and dragging.
+
+**Tags:** simulation · art · pottery
+
 ---
 
 ##  Why DYNAF.GAMES?
