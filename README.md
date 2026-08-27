@@ -52,6 +52,7 @@ devdynaf.github.io/
 ├── index.html          # Main landing page — game library
 ├── redstone-lab/        # Redstone circuit simulator
 ├── falling-sand/         # Falling sand physics sandbox
+├── clay-3d/               # Pottery simulator
 ├── sitemap.xml
 └── robots.txt
 ```
