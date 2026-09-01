@@ -1,0 +1,3689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>NebulaOS — Ghost Shell</title>
+<meta name="description" content="NebulaOS Ghost Shell — a browser hacking-simulator OS. 8-mission story campaign plus endless procedurally generated darknet contracts.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23010403'/%3E%3Ctext x='16' y='22' font-size='16' text-anchor='middle' fill='%2300e07f' font-family='monospace'%3E%26gt;_%3C/text%3E%3C/svg%3E">
+<style>
+/* ============ NebulaOS Ghost Shell — standalone stylesheet ============ */
+:root{
+  --accent:#00e07f; --accent-strong:#00ff92; --accent-soft:rgba(0,224,127,.12);
+  --accent-fg:#02130b;
+  --text:rgba(224,240,230,.88); --muted:rgba(255,255,255,.38);
+  --bg:#010403; --panel:rgba(255,255,255,.03); --border:rgba(255,255,255,.09);
+  --ok:#4ade80; --warn:#fbbf24; --danger:#f87171; --amber:#fb923c;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--bg); color:var(--text); overflow:hidden;
+  font-family:ui-monospace,"Cascadia Code","JetBrains Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  font-size:12.5px; line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+.os-root{position:fixed;inset:0;overflow:hidden}
+.hidden{display:none!important}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+input{font:inherit}
+.os-scroll{scrollbar-width:thin;scrollbar-color:rgba(0,224,127,.28) transparent}
+.os-scroll::-webkit-scrollbar{width:8px;height:8px}
+.os-scroll::-webkit-scrollbar-thumb{background:rgba(0,224,127,.25);border-radius:4px}
+.os-scroll::-webkit-scrollbar-thumb:hover{background:rgba(0,224,127,.45)}
+.os-scroll::-webkit-scrollbar-track{background:transparent}
+
+/* ============ boot screen ============ */
+#boot{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;padding:20px;cursor:pointer}
+.boot-window{width:min(660px,94vw);background:rgba(3,9,6,.92);border:1px solid rgba(0,224,127,.28);border-radius:10px;box-shadow:0 0 60px rgba(0,224,127,.09),0 24px 60px rgba(0,0,0,.6);overflow:hidden;position:relative}
+.boot-titlebar{display:flex;align-items:center;gap:7px;padding:8px 12px;background:rgba(0,224,127,.06);border-bottom:1px solid rgba(0,224,127,.14)}
+.dot{width:10px;height:10px;border-radius:50%;flex:none}
+.dot.red{background:#f87171}.dot.amber{background:#fbbf24}.dot.green{background:var(--ok)}
+.boot-title{margin-left:8px;font-size:10px;letter-spacing:.18em;color:var(--muted)}
+.boot-body{padding:14px 16px;min-height:240px;display:flex;flex-direction:column;justify-content:flex-start;gap:2px;font-size:11.5px;position:relative}
+.boot-line{white-space:pre-wrap;animation:os-fade-in .18s ease-out both}
+.boot-line b{font-weight:700}
+.boot-line .ok{color:var(--ok)}.boot-line .warn{color:var(--warn)}.boot-line .dim{color:var(--muted)}
+.boot-sweep{position:absolute;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,224,127,.55),transparent);animation:sweep 5.5s linear infinite}
+@keyframes sweep{0%{top:4px}100%{top:236px}}
+.boot-progress{display:flex;align-items:center;gap:10px;padding:10px 16px 14px;border-top:1px solid rgba(0,224,127,.12)}
+.boot-bar{flex:1;height:10px;background:rgba(255,255,255,.06);border-radius:5px;overflow:hidden}
+.boot-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,rgba(0,224,127,.65),var(--accent-strong));border-radius:5px;transition:width .25s ease}
+.boot-pct{font-size:10px;color:var(--accent);min-width:34px;text-align:right}
+.boot-brand{font-size:clamp(20px,4vw,30px);font-weight:700;letter-spacing:.32em;color:var(--muted)}
+.boot-brand b{color:var(--accent);text-shadow:0 0 18px rgba(0,224,127,.5)}
+.boot-brand em{font-style:normal;font-size:11px;letter-spacing:.3em;color:rgba(0,224,127,.6);display:block;text-align:center;margin-top:6px}
+.boot-skip{font-size:10px;color:rgba(255,255,255,.22);letter-spacing:.2em}
+
+/* ============ lock screen ============ */
+#lock{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:20px;background:radial-gradient(1000px 700px at 50% 0%,rgba(0,224,127,.07),transparent 60%),#010403}
+.lock-clock{font-size:clamp(48px,10vw,84px);font-weight:700;letter-spacing:.06em;color:var(--accent);text-shadow:0 0 30px rgba(0,224,127,.45);line-height:1}
+.lock-date{font-size:12px;color:var(--muted);letter-spacing:.22em;text-transform:uppercase;margin-top:-4px}
+.lock-greet{margin-top:22px;font-size:12px;color:rgba(0,224,127,.75)}
+.lock-card{margin-top:14px;width:min(360px,92vw);background:rgba(3,9,6,.9);border:1px solid rgba(0,224,127,.26);border-radius:12px;box-shadow:0 0 50px rgba(0,224,127,.08),0 20px 50px rgba(0,0,0,.55);overflow:hidden;animation:os-rise .4s ease-out both}
+.lock-card-title{display:flex;align-items:center;gap:7px;padding:8px 12px;background:rgba(0,224,127,.06);border-bottom:1px solid rgba(0,224,127,.14);font-size:10px;letter-spacing:.18em;color:var(--muted)}
+.lock-card-body{padding:18px}
+.lock-card-body h2{font-size:13px;letter-spacing:.26em;color:var(--accent);margin-bottom:12px}
+.lock-input{width:100%;background:rgba(0,224,127,.05);border:1px solid rgba(0,224,127,.22);border-radius:7px;color:var(--text);padding:9px 12px;outline:none;letter-spacing:.08em}
+.lock-input:focus{border-color:rgba(0,224,127,.55);box-shadow:0 0 0 3px rgba(0,224,127,.1)}
+.lock-btn{margin-top:12px;width:100%;padding:10px;border-radius:7px;background:var(--accent-soft);border:1px solid rgba(0,224,127,.35);color:var(--accent);font-weight:700;letter-spacing:.24em;font-size:11px;transition:all .15s}
+.lock-btn:hover{background:rgba(0,224,127,.22);box-shadow:0 0 24px rgba(0,224,127,.25)}
+.lock-sub{margin-top:12px;font-size:9.5px;color:rgba(255,255,255,.3);text-align:center;letter-spacing:.14em}
+.lock-status{margin-top:16px;display:flex;gap:14px;font-size:9.5px;color:var(--muted);letter-spacing:.16em}
+.lock-status b{color:var(--ok)}
+.lock-foot{position:absolute;bottom:22px;font-size:9.5px;color:rgba(255,255,255,.22);letter-spacing:.24em}
+
+/* ============ desktop ============ */
+#desktop{position:absolute;inset:0}
+.wallpaper{position:absolute;inset:0;background:#010403}
+.matrix-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;opacity:.85}
+.desktop-icons{position:absolute;top:26px;left:26px;display:flex;flex-direction:column;gap:22px}
+.desktop-icon{display:flex;flex-direction:column;align-items:center;gap:8px;width:86px;padding:12px 6px;border-radius:12px;transition:background .15s;user-select:none}
+.desktop-icon:hover{background:rgba(0,224,127,.08)}
+.desktop-icon:active{background:rgba(0,224,127,.14)}
+.desktop-icon .ic{width:44px;height:44px;border-radius:11px;background:rgba(0,224,127,.1);border:1px solid rgba(0,224,127,.35);display:flex;align-items:center;justify-content:center;box-shadow:0 0 22px rgba(0,224,127,.14)}
+.desktop-icon span{font-size:10px;letter-spacing:.14em;color:rgba(224,255,240,.8);text-shadow:0 1px 4px rgba(0,0,0,.8)}
+
+/* ============ window ============ */
+.window{position:absolute;display:flex;flex-direction:column;background:rgba(2,6,4,.96);border:1px solid rgba(0,224,127,.3);border-radius:12px;box-shadow:0 0 55px rgba(0,224,127,.1),0 30px 70px rgba(0,0,0,.62);overflow:hidden;animation:os-window-in .26s ease-out both;min-width:320px}
+.win-titlebar{display:flex;align-items:center;gap:8px;padding:9px 12px;background:rgba(0,224,127,.06);border-bottom:1px solid rgba(0,224,127,.16);cursor:grab;user-select:none;touch-action:none}
+.win-titlebar:active{cursor:grabbing}
+.win-title{margin-left:6px;font-size:10.5px;font-weight:700;letter-spacing:.22em;color:var(--accent)}
+.win-actions{margin-left:auto;display:flex;gap:6px}
+.win-actions button{width:26px;height:22px;border-radius:6px;background:rgba(255,255,255,.05);color:rgba(255,255,255,.55);font-size:10px;display:flex;align-items:center;justify-content:center;transition:all .13s}
+.win-actions button:hover{background:rgba(0,224,127,.16);color:var(--accent)}
+.win-actions button.danger:hover{background:rgba(248,113,113,.18);color:var(--danger)}
+.win-content{flex:1;position:relative;display:flex;flex-direction:column;min-height:0}
+.window.max{border-radius:0}
+
+/* ============ terminal app ============ */
+.term-toolbar{height:44px;display:flex;align-items:center;gap:8px;padding:0 12px;flex:none;border-bottom:1px solid rgba(0,224,127,.18);background:rgba(0,224,127,.05)}
+.term-brand{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;letter-spacing:.22em;color:var(--accent)}
+.term-brand .ghostmark{filter:drop-shadow(0 0 8px rgba(0,224,127,.6))}
+.term-sub{font-size:11px;color:rgba(255,255,255,.3);letter-spacing:.18em}
+.term-spacer{flex:1}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:6px;font-size:10px;font-weight:700;letter-spacing:.1em}
+.chip.mint{background:var(--accent-soft);color:var(--accent);animation:pulse 1.6s ease-in-out infinite}
+.chip.trace{background:rgba(255,255,255,.05)}
+.chip.proxy-on{background:var(--accent-soft);color:var(--accent)}
+.chip.proxy-off{background:rgba(255,255,255,.05);color:rgba(255,255,255,.35)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
+.tb-btn{height:28px;padding:0 10px;border-radius:6px;font-size:10px;font-weight:700;letter-spacing:.12em;background:var(--accent-soft);color:var(--accent);transition:filter .13s}
+.tb-btn:hover{filter:brightness(1.3)}
+.tb-btn.abort{background:rgba(248,113,113,.14);color:var(--danger)}
+.term-body{flex:1;display:flex;min-height:0}
+.term-main{flex:1;display:flex;flex-direction:column;min-width:0}
+.term-lines{flex:1;overflow-y:auto;padding:12px 16px;line-height:1.7;cursor:text}
+.term-lines p{white-space:pre-wrap;word-break:break-word}
+.tone-cmd{color:#f4fff8}.tone-out{color:var(--text)}.tone-muted{color:var(--muted)}
+.tone-warn{color:var(--warn)}.tone-danger{color:var(--danger)}.tone-ok{color:var(--ok)}
+.tone-accent{color:var(--accent)}
+.tone-head{color:var(--accent);font-weight:700;text-shadow:0 0 14px rgba(0,224,127,.45)}
+.busy-row{color:rgba(255,255,255,.35)}
+.busy-row .caret{margin-right:8px}
+.term-input-row{display:flex;align-items:center;gap:8px;padding:10px 16px;flex:none;border-top:1px solid rgba(0,224,127,.14);background:rgba(0,224,127,.03)}
+.term-prompt{font-weight:700;color:var(--accent);flex:none}
+.term-input{flex:1;background:transparent;border:none;outline:none;color:#f4fff8;caret-color:var(--accent);min-width:0}
+.term-input:disabled{opacity:.4}
+.caret{display:inline-block;width:8px;height:15px;background:var(--accent);animation:blink 1.1s steps(1) infinite;flex:none}
+@keyframes blink{50%{opacity:0}}
+
+/* side panel */
+.term-panel{display:none;width:290px;flex:none;overflow-y:auto;padding:12px;flex-direction:column;gap:12px;border-left:1px solid rgba(0,224,127,.16);background:rgba(255,255,255,.015)}
+@media(min-width:900px){.term-panel{display:flex}}
+.pcard{border-radius:12px;padding:12px;background:var(--panel);border:1px solid var(--border)}
+.pcard-label{font-size:10px;font-weight:700;letter-spacing:.18em;color:var(--muted)}
+.pcard-label-row{display:flex;align-items:center;gap:7px}
+.pcard-label-row svg{color:var(--accent)}
+.p-rank{margin-top:6px;font-size:14px;font-weight:700;color:var(--accent)}
+.p-sub{font-size:10px;color:rgba(255,255,255,.4)}
+.pbar{margin-top:8px;height:6px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}
+.pbar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent-strong));transition:width .5s ease}
+.prow{margin-top:10px;display:flex;align-items:center;gap:12px;font-size:11px}
+.prow .coins{color:var(--warn)}.prow .closed{color:rgba(255,255,255,.45)}
+.pbar-trace{height:8px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:8px}
+.pbar-trace-fill{height:100%;border-radius:99px;transition:width .5s ease}
+.obj-list{list-style:none;margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.obj-list li{display:flex;align-items:flex-start;gap:6px;font-size:11px}
+.obj-list .marker{flex:none;margin-top:2px;width:13px;height:13px;border-radius:50%;border:1.5px solid rgba(255,255,255,.25)}
+.obj-list li.done .marker{background:var(--ok);border-color:var(--ok)}
+.obj-list li.done span{color:var(--ok);text-decoration:line-through}
+.obj-list li span{color:rgba(255,255,255,.7)}
+.tool-grid{margin-top:8px;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.tool{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px;border-radius:8px;background:var(--accent-soft)}
+.tool.locked{background:rgba(255,255,255,.03);opacity:.45}
+.tool .tname{font-size:9px;color:var(--accent)}
+.tool.locked .tname{color:rgba(255,255,255,.4)}
+.hosts-list{list-style:none;margin-top:8px;display:flex;flex-direction:column;gap:6px}
+.hosts-list li{display:flex;align-items:center;gap:8px;font-size:11px}
+.hosts-list .hdot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.2);flex:none}
+.hosts-list .hname{color:rgba(255,255,255,.75)}
+.hosts-list .hip{color:rgba(255,255,255,.35)}
+.shell-tag{margin-left:auto;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--accent-soft);color:var(--accent)}
+.p-btn{margin-top:8px;height:28px;padding:0 10px;border-radius:6px;font-size:10px;font-weight:700;letter-spacing:.12em;background:var(--accent-soft);color:var(--accent)}
+.p-btn:hover{filter:brightness(1.3)}
+
+/* ============ mission board overlay ============ */
+.board{position:absolute;inset:0;z-index:30;display:flex;flex-direction:column;background:rgba(1,4,3,.97);animation:os-fade-in .18s ease-out both}
+.board-head{height:44px;display:flex;align-items:center;gap:8px;padding:0 12px;flex:none;border-bottom:1px solid rgba(0,224,127,.18)}
+.board-title{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:.22em;color:var(--accent)}
+.board-x{width:28px;height:28px;border-radius:6px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.6);display:flex;align-items:center;justify-content:center}
+.board-x:hover{background:rgba(248,113,113,.16);color:var(--danger)}
+.board-body{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.board-section{font-size:10px;font-weight:700;letter-spacing:.2em;color:rgba(255,255,255,.35);padding:0 4px}
+.board-sep{margin-top:10px;padding-top:12px;display:flex;align-items:center;gap:8px;border-top:1px dashed rgba(0,224,127,.25);font-size:10px;font-weight:700;letter-spacing:.2em;color:var(--accent)}
+.board-sep .seclabel{color:var(--accent)}
+.board-sep .sechint{margin-left:auto;font-weight:400;color:rgba(255,255,255,.3);letter-spacing:.05em;font-size:9px}
+.mission-card{text-align:left;border-radius:12px;padding:14px;background:rgba(255,255,255,.03);border:1px solid var(--border);transition:transform .16s;animation:os-rise .3s ease-out both}
+.mission-card:not(:disabled):hover{transform:scale(1.01)}
+.mission-card:disabled{cursor:default}
+.mission-card.done{background:rgba(74,222,128,.06);border-color:rgba(74,222,128,.3)}
+.mission-card.locked{opacity:.55}
+.mission-card.bounty{background:rgba(0,224,127,.045);border-color:rgba(0,224,127,.22)}
+.mission-card.bounty.active{border-color:rgba(251,191,36,.4)}
+.mc-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.mc-num{font-size:10px;font-weight:700;color:var(--accent)}
+.mc-num.done{color:var(--ok)}
+.mc-badge{font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--accent-soft);color:var(--accent)}
+.mc-title{font-size:13px;font-weight:700;color:rgba(255,255,255,.9)}
+.mc-diff{font-size:10px;color:var(--warn)}
+.mc-status{font-size:10px;font-weight:700;letter-spacing:.12em}
+.mc-status.closed{color:var(--ok)}.mc-status.avail{color:var(--accent)}
+.mc-status.locked{color:rgba(255,255,255,.4)}.mc-status.active{color:var(--warn)}
+.mc-brief{margin-top:6px;font-size:11px;line-height:1.55;color:rgba(255,255,255,.55);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.mc-client{margin-top:4px;font-size:10px;color:rgba(255,255,255,.35)}
+.mc-accept{margin-top:6px;font-size:10px;color:var(--accent)}
+.mint-slot{border-radius:12px;padding:14px;background:rgba(0,224,127,.03);border:1px dashed rgba(0,224,127,.3);animation:pulse 1.8s ease-in-out infinite;font-size:11px;color:rgba(255,255,255,.4)}
+.empty-slot{border-radius:12px;padding:14px;background:rgba(255,255,255,.02);border:1px dashed rgba(255,255,255,.12);font-size:11px;color:rgba(255,255,255,.45)}
+
+/* ============ taskbar ============ */
+.taskbar{position:absolute;left:0;right:0;bottom:0;height:44px;display:flex;align-items:center;gap:8px;padding:0 10px 0 8px;background:rgba(2,7,5,.88);backdrop-filter:blur(14px);border-top:1px solid rgba(0,224,127,.2);z-index:40}
+.tb-start{display:flex;align-items:center;gap:7px;height:30px;padding:0 12px;border-radius:7px;font-size:10.5px;font-weight:700;letter-spacing:.14em;color:var(--accent);background:var(--accent-soft);border:1px solid rgba(0,224,127,.3);transition:filter .13s}
+.tb-start:hover{filter:brightness(1.25)}
+.tb-app{display:flex;align-items:center;gap:7px;height:30px;padding:0 12px;border-radius:7px;font-size:10.5px;letter-spacing:.12em;color:rgba(255,255,255,.75);background:rgba(255,255,255,.04);border:1px solid transparent;transition:all .13s}
+.tb-app:hover{background:rgba(0,224,127,.1);color:var(--accent)}
+.tb-app.running{border-color:rgba(0,224,127,.35);color:var(--accent);background:rgba(0,224,127,.08)}
+.tb-app.running::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent)}
+.task-spacer{flex:1}
+.tray{display:flex;align-items:center;gap:10px}
+.tray-item{font-size:9.5px;letter-spacing:.12em;color:var(--muted)}
+.tray-item b{color:var(--ok)}
+.tray-btn{font-size:9.5px;letter-spacing:.12em;color:var(--muted);padding:4px 8px;border-radius:6px;transition:all .13s}
+.tray-btn:hover{color:var(--accent);background:rgba(0,224,127,.1)}
+.tray-clock{font-size:11px;color:rgba(224,255,240,.85);padding:4px 8px;border-radius:6px;background:rgba(255,255,255,.04)}
+
+/* ============ start menu ============ */
+.start-menu{position:absolute;left:10px;bottom:54px;width:230px;background:rgba(3,10,7,.96);border:1px solid rgba(0,224,127,.3);border-radius:12px;box-shadow:0 0 40px rgba(0,224,127,.1),0 18px 40px rgba(0,0,0,.6);z-index:50;overflow:hidden;animation:os-rise .18s ease-out both;padding:6px}
+.sm-label{font-size:9px;font-weight:700;letter-spacing:.22em;color:var(--muted);padding:8px 10px 4px}
+.sm-item{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border-radius:8px;font-size:11px;color:rgba(255,255,255,.8);letter-spacing:.06em;transition:background .12s}
+.sm-item:hover{background:rgba(0,224,127,.1);color:var(--accent)}
+.sm-item .sm-ico{color:var(--accent);width:16px;text-align:center}
+.sm-sep{height:1px;margin:6px 10px;background:rgba(255,255,255,.08)}
+.sm-foot{padding:8px 10px 6px;font-size:9px;color:rgba(255,255,255,.25);letter-spacing:.1em}
+
+/* ============ power screen ============ */
+#power{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#000;z-index:60;cursor:pointer}
+.power-box{text-align:center;font-size:15px;letter-spacing:.3em;color:var(--accent);text-shadow:0 0 20px rgba(0,224,127,.4)}
+.power-box span{display:block;margin-top:14px;font-size:10px;letter-spacing:.2em;color:rgba(255,255,255,.3)}
+
+/* ============ CRT overlay ============ */
+.crt-overlay{position:fixed;inset:0;pointer-events:none;z-index:90;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.13) 0 1px,transparent 1px 4px);
+  mix-blend-mode:multiply;animation:crt-flicker 7s infinite}
+.crt-overlay::after{content:"";position:absolute;inset:0;
+  background:radial-gradient(ellipse at center,transparent 58%,rgba(0,0,0,.4) 100%)}
+@keyframes crt-flicker{0%,100%{opacity:1}3%{opacity:.96}6%{opacity:1}42%{opacity:.98}44%{opacity:.95}46%{opacity:1}78%{opacity:.97}80%{opacity:1}}
+
+/* ============ toasts ============ */
+.toasts{position:fixed;top:16px;right:16px;display:flex;flex-direction:column;gap:10px;z-index:100;width:min(330px,92vw)}
+.toast{border-radius:10px;padding:12px 14px;background:rgba(3,10,7,.96);border:1px solid rgba(0,224,127,.3);box-shadow:0 12px 34px rgba(0,0,0,.5);animation:os-rise .25s ease-out both}
+.toast.danger{border-color:rgba(248,113,113,.4)}
+.toast .t-title{font-size:10px;font-weight:700;letter-spacing:.2em;color:var(--accent);margin-bottom:4px}
+.toast.danger .t-title{color:var(--danger)}
+.toast .t-msg{font-size:11.5px;color:rgba(255,255,255,.8)}
+
+/* ============ animations ============ */
+@keyframes os-fade-in{from{opacity:0}to{opacity:1}}
+@keyframes os-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes os-window-in{from{opacity:0;transform:scale(.96) translateY(14px)}to{opacity:1;transform:none}}
+
+/* ============ responsive / mobile ============ */
+@media(max-width:899px){
+  .window{left:6px!important;top:6px!important;width:calc(100vw - 12px)!important;height:calc(100% - 62px)!important}
+  .term-sub,.chip.trace,.chip.proxy-on,.chip.proxy-off{display:none}
+  .desktop-icons{top:16px;left:16px;gap:14px}
+}
+</style>
+</head>
+<body>
+<div id="os" class="os-root">
+
+  <!-- ================= BOOT ================= -->
+  <section id="boot" class="phase" aria-label="System boot">
+    <div class="boot-window">
+      <div class="boot-titlebar">
+        <span class="dot red"></span><span class="dot amber"></span><span class="dot green"></span>
+        <span class="boot-title">/dev/console — NEBULA-BIOS v6.16 · GHOST SHELL</span>
+      </div>
+      <div class="boot-body os-scroll" id="boot-lines" role="log" aria-live="polite">
+        <div class="boot-sweep"></div>
+      </div>
+      <div class="boot-progress">
+        <div class="boot-bar"><div class="boot-bar-fill" id="boot-bar-fill"></div></div>
+        <span class="boot-pct" id="boot-pct">0%</span>
+      </div>
+    </div>
+    <div class="boot-brand">NEBULA<b>OS</b><em>GHOST SHELL · STANDALONE</em></div>
+    <div class="boot-skip">click anywhere to skip</div>
+  </section>
+
+  <!-- ================= LOCK ================= -->
+  <section id="lock" class="phase hidden" aria-label="Lock screen">
+    <div class="lock-clock" id="lock-clock">--:--</div>
+    <div class="lock-date" id="lock-date"></div>
+    <div class="lock-greet" id="lock-greet">&gt; greeting, operator</div>
+    <div class="lock-card">
+      <div class="lock-card-title">
+        <span class="dot red"></span><span class="dot amber"></span><span class="dot green"></span>
+        <span class="boot-title">AUTH—GATEWAY</span>
+      </div>
+      <div class="lock-card-body">
+        <h2>AUTH—GATEWAY</h2>
+        <form id="lock-form">
+          <input class="lock-input" id="lock-pass" type="password" placeholder="passphrase (any will do)" aria-label="Passphrase" autocomplete="off">
+          <button class="lock-btn" type="submit">AUTHENTICATE</button>
+        </form>
+        <p class="lock-sub">AES-256 · ephemeral keys · zero logs</p>
+        <div class="lock-status"><span>TOR·<b>3 hops</b></span><span>UPLINK <b>SECURE</b></span><span>TRACE <b>CLEAR</b></span></div>
+      </div>
+    </div>
+    <div class="lock-foot">NEBULAOS 2.2 — GHOST SHELL · OFFLINE BUILD</div>
+  </section>
+
+  <!-- ================= DESKTOP ================= -->
+  <section id="desktop" class="phase hidden" aria-label="Desktop">
+    <div class="wallpaper" id="wallpaper"></div>
+    <canvas id="matrix-canvas" class="matrix-canvas" aria-hidden="true"></canvas>
+
+    <div class="desktop-icons">
+      <button class="desktop-icon" id="icon-terminal" aria-label="Open Terminal">
+        <span class="ic">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00e07f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+        </span>
+        <span>TERMINAL</span>
+      </button>
+    </div>
+
+    <!-- terminal window -->
+    <div class="window hidden" id="window" role="dialog" aria-label="Terminal window">
+      <div class="win-titlebar" id="win-titlebar">
+        <span class="dot red"></span><span class="dot amber"></span><span class="dot green"></span>
+        <span class="win-title" id="win-title">TERMINAL — GHOST SHELL</span>
+        <div class="win-actions">
+          <button id="win-max" title="Maximize / restore" aria-label="Maximize or restore window">▢</button>
+          <button id="win-close" class="danger" title="Close" aria-label="Close window">✕</button>
+        </div>
+      </div>
+      <div class="win-content">
+        <!-- toolbar -->
+        <div class="term-toolbar">
+          <span class="term-brand">
+            <svg class="ghostmark" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#00e07f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 10h.01"/><path d="M15 10h.01"/><path d="M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z"/></svg>
+            TERMINAL
+          </span>
+          <span class="term-sub">// GHOST SHELL · DARKNET</span>
+          <span class="term-spacer"></span>
+          <span class="chip mint hidden" id="chip-mint" title="Generating darknet bounties">✦ MINTING…</span>
+          <span class="chip trace hidden" id="chip-trace" title="Trace level"></span>
+          <span class="chip proxy-off hidden" id="chip-proxy" title="Proxy chain">⇄ PROXY OFF</span>
+          <button class="tb-btn" id="btn-board" aria-label="Mission board">MISSIONS</button>
+          <button class="tb-btn abort hidden" id="btn-abort" aria-label="Abort mission">ABORT</button>
+        </div>
+        <!-- body -->
+        <div class="term-body">
+          <div class="term-main" id="term-main">
+            <div class="term-lines os-scroll" id="term-lines" role="log" aria-label="Ghost Shell terminal" aria-live="polite"></div>
+            <form class="term-input-row" id="term-form">
+              <span class="term-prompt" id="term-prompt">operator@ghost:~$</span>
+              <input class="term-input" id="term-input" autocomplete="off" spellcheck="false" aria-label="Terminal command input" placeholder="type a command…">
+              <span class="caret" id="term-caret" aria-hidden="true"></span>
+            </form>
+          </div>
+          <aside class="term-panel os-scroll" id="term-panel" aria-label="Operator status"></aside>
+        </div>
+        <!-- mission board overlay -->
+        <div class="board hidden" id="board" aria-label="Darknet contract board">
+          <div class="board-head">
+            <span class="board-title">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#00e07f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="12" r="1"/><path d="M8 20l2-2 2 2"/><circle cx="17" cy="12" r="1"/><path d="M16 20l2-2 2 2"/><path d="M12 12l0 0"/></svg>
+              DARKNET CONTRACT BOARD
+            </span>
+            <span class="term-spacer"></span>
+            <button class="tb-btn" id="btn-reroll" style="background:rgba(255,255,255,.06);color:rgba(255,255,255,.7)" title="Discard unclaimed bounties and mint fresh ones" aria-label="Reroll unclaimed bounties">⚄ REROLL</button>
+            <button class="board-x" id="btn-board-close" aria-label="Close mission board">✕</button>
+          </div>
+          <div class="board-body os-scroll" id="board-body"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- taskbar -->
+    <div class="taskbar">
+      <button class="tb-start" id="start-btn" aria-label="Start menu">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00e07f" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        START
+      </button>
+      <button class="tb-app" id="task-terminal" aria-label="Toggle Terminal">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+        TERMINAL
+      </button>
+      <div class="task-spacer"></div>
+      <div class="tray">
+        <span class="tray-item" title="darknet uplink">TOR·<b>3</b></span>
+        <button class="tray-btn" id="tray-sound" title="Toggle system sounds" aria-label="Toggle system sounds">SND ON</button>
+        <span class="tray-clock" id="tray-clock">--:--</span>
+      </div>
+    </div>
+
+    <!-- start menu -->
+    <div class="start-menu hidden" id="start-menu" aria-label="Start menu">
+      <p class="sm-label">DARKNET</p>
+      <button class="sm-item" id="sm-terminal"><span class="sm-ico">&gt;_</span> Terminal</button>
+      <div class="sm-sep"></div>
+      <p class="sm-label">SESSION</p>
+      <button class="sm-item" id="sm-lock"><span class="sm-ico">⚿</span> Lock session</button>
+      <button class="sm-item" id="sm-restart"><span class="sm-ico">↻</span> Restart</button>
+      <button class="sm-item" id="sm-shutdown"><span class="sm-ico">⏻</span> Shut down</button>
+      <div class="sm-sep"></div>
+      <p class="sm-foot">NEBULAOS 2.2 · ghost shell · offline build</p>
+    </div>
+  </section>
+
+  <!-- ================= POWER ================= -->
+  <section id="power" class="phase hidden" aria-label="System halted">
+    <div class="power-box" id="power-box">SYSTEM HALTED<span>click anywhere to reboot</span></div>
+  </section>
+
+  <!-- overlays -->
+  <div id="crt-overlay" class="crt-overlay" aria-hidden="true"></div>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+</div>
+
+<script>
+/* ================================================================== */
+/* NebulaOS Ghost Shell — standalone build                             */
+/* Part 1: utilities, settings, wallpapers, sound, toasts, matrix rain */
+/* 100% offline. No network calls anywhere in this file.               */
+/* ================================================================== */
+"use strict";
+
+/* ---------- tiny DOM helpers ---------- */
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/* ---------- settings (localStorage) ---------- */
+const SETTINGS_KEY = "nebula.settings.v1";
+
+const WALLPAPERS = [
+  { id: "matrix-rain", label: "Matrix Rain (live)", live: true, css: "linear-gradient(180deg,#010403 0%,#021007 100%)" },
+  { id: "grad-midnight", label: "Midnight", css: "radial-gradient(1200px 800px at 70% 20%, rgba(16,185,129,0.22), transparent 60%), radial-gradient(900px 700px at 20% 80%, rgba(20,184,166,0.14), transparent 55%), linear-gradient(160deg, #0a0f0e 0%, #060a09 100%)" },
+  { id: "grad-ember", label: "Ember", css: "radial-gradient(1100px 700px at 25% 15%, rgba(245,158,11,0.18), transparent 60%), radial-gradient(900px 700px at 80% 85%, rgba(244,63,94,0.12), transparent 55%), linear-gradient(150deg, #14100a 0%, #0b0908 100%)" },
+  { id: "grad-rose", label: "Rose Quartz", css: "radial-gradient(1000px 700px at 30% 30%, rgba(244,63,94,0.18), transparent 60%), radial-gradient(900px 700px at 75% 75%, rgba(139,92,246,0.14), transparent 55%), linear-gradient(135deg, #1a0d12 0%, #0a0709 100%)" },
+  { id: "grad-forest", label: "Forest", css: "radial-gradient(1100px 800px at 25% 80%, rgba(16,185,129,0.18), transparent 60%), radial-gradient(900px 700px at 80% 20%, rgba(20,184,166,0.12), transparent 55%), linear-gradient(140deg, #06120d 0%, #050a08 100%)" },
+  { id: "grad-graphite", label: "Graphite", css: "radial-gradient(900px 700px at 50% 0%, rgba(255,255,255,0.04), transparent 60%), linear-gradient(180deg, #15171a 0%, #0a0c0f 100%)" },
+];
+
+const DEFAULT_SETTINGS = { wallpaper: "matrix-rain", sound: true, crt: true };
+
+function loadSettings() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "null");
+    if (raw && typeof raw === "object") {
+      return {
+        wallpaper: typeof raw.wallpaper === "string" && WALLPAPERS.some((w) => w.id === raw.wallpaper) ? raw.wallpaper : DEFAULT_SETTINGS.wallpaper,
+        sound: typeof raw.sound === "boolean" ? raw.sound : DEFAULT_SETTINGS.sound,
+        crt: typeof raw.crt === "boolean" ? raw.crt : DEFAULT_SETTINGS.crt,
+      };
+    }
+  } catch (e) { /* corrupted settings fall back to defaults */ }
+  return { ...DEFAULT_SETTINGS };
+}
+
+function saveSettings() {
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(SETTINGS)); } catch (e) { /* storage full/blocked — keep playing */ }
+}
+
+let SETTINGS = loadSettings();
+
+function applyWallpaper() {
+  const w = WALLPAPERS.find((x) => x.id === SETTINGS.wallpaper) || WALLPAPERS[0];
+  $("wallpaper").style.background = w.css;
+  $("matrix-canvas").style.display = w.live ? "block" : "none";
+}
+
+function applyCrt() {
+  $("crt-overlay").style.display = SETTINGS.crt ? "block" : "none";
+}
+
+/* ---------- sound engine (WebAudio, zero assets) ---------- */
+let audioCtx = null;
+let audioMaster = null;
+let lastPlay = 0;
+
+function ensureCtx() {
+  if (!audioCtx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    try {
+      audioCtx = new AC();
+      audioMaster = audioCtx.createGain();
+      audioMaster.gain.value = 0.55;
+      audioMaster.connect(audioCtx.destination);
+    } catch (e) { return null; }
+  }
+  if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
+  return audioCtx;
+}
+
+function tone(freq, dur, opts) {
+  opts = opts || {};
+  const c = audioCtx;
+  if (!audioMaster) return;
+  const t0 = c.currentTime + (opts.delay || 0);
+  const osc = c.createOscillator();
+  const g = c.createGain();
+  osc.type = opts.type || "sine";
+  osc.frequency.setValueAtTime(freq, t0);
+  if (opts.to && opts.to !== freq) osc.frequency.exponentialRampToValueAtTime(opts.to, t0 + dur);
+  const peak = opts.gain || 0.08;
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(peak, t0 + 0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  osc.connect(g); g.connect(audioMaster);
+  osc.start(t0); osc.stop(t0 + dur + 0.05);
+}
+
+const SOUND_RECIPES = {
+  click: () => tone(1250, 0.045, { to: 950, gain: 0.035, type: "triangle" }),
+  open: () => { tone(523, 0.09, { to: 659, gain: 0.06, type: "triangle" }); tone(784, 0.07, { delay: 0.07, gain: 0.045 }); },
+  notify: () => { tone(1319, 0.12, { gain: 0.05 }); tone(1568, 0.16, { delay: 0.09, gain: 0.045 }); },
+  error: () => { tone(220, 0.09, { gain: 0.06, type: "square" }); tone(185, 0.12, { delay: 0.1, gain: 0.055, type: "square" }); },
+  unlock: () => { tone(880, 0.08, { gain: 0.045 }); tone(1175, 0.1, { delay: 0.06, gain: 0.045 }); tone(1568, 0.14, { delay: 0.12, gain: 0.04 }); },
+  boot: () => {
+    [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.14, { delay: i * 0.085, gain: 0.05, type: "triangle" }));
+    tone(2093, 0.2, { delay: 0.34, gain: 0.03 });
+  },
+  shutdown: () => {
+    [784, 659, 523, 392].forEach((f, i) => tone(f, 0.13, { delay: i * 0.09, gain: 0.05, type: "triangle" }));
+    tone(262, 0.25, { delay: 0.38, gain: 0.04 });
+  },
+};
+
+function playSound(name) {
+  try {
+    if (!SETTINGS.sound) return;
+    const now = Date.now();
+    if (now - lastPlay < 30) return;
+    lastPlay = now;
+    if (!ensureCtx()) return;
+    const fn = SOUND_RECIPES[name];
+    if (fn) fn();
+  } catch (e) { /* sound must never break the OS */ }
+}
+
+/* ---------- toasts ---------- */
+function notify(title, msg, variant) {
+  const box = document.createElement("div");
+  box.className = "toast" + (variant === "danger" ? " danger" : "");
+  box.innerHTML = '<p class="t-title">' + esc(title) + "</p><p class=\"t-msg\">" + esc(msg) + "</p>";
+  $("toasts").appendChild(box);
+  setTimeout(() => {
+    box.style.transition = "opacity .3s, transform .3s";
+    box.style.opacity = "0";
+    box.style.transform = "translateX(12px)";
+    setTimeout(() => box.remove(), 320);
+  }, 4200);
+}
+
+/* ---------- live matrix rain wallpaper (port of MatrixRain) ---------- */
+const MatrixRain = (() => {
+  const CHARS = "アイウエオカキクケコサシスセソタチツテトナニヌネノ0123456789ABCDEF$#@%&*+=<>";
+  const FONT = 16;
+  let canvas, ctx, width = 0, height = 0, drops = [], speeds = [], raf = 0, last = 0;
+  let dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const accent = "#00e07f";
+
+  function resize() {
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    width = Math.max(1, Math.floor(rect.width));
+    height = Math.max(1, Math.floor(rect.height));
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.floor(width * dpr);
+    canvas.height = Math.floor(height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const cols = Math.max(4, Math.floor(width / FONT));
+    drops = []; speeds = [];
+    for (let i = 0; i < cols; i++) {
+      drops.push(Math.floor(Math.random() * (height / FONT)));
+      speeds.push(0.55 + Math.random() * 0.9);
+    }
+    ctx.fillStyle = "#010403";
+    ctx.fillRect(0, 0, width, height);
+  }
+
+  function draw(now) {
+    raf = requestAnimationFrame(draw);
+    if (reduced) { if (now - last < 800) return; }
+    else if (now - last < 50) return;
+    last = now;
+    ctx.fillStyle = "rgba(1,4,3,0.085)";
+    ctx.fillRect(0, 0, width, height);
+    ctx.font = FONT + "px ui-monospace, SFMono-Regular, Menlo, monospace";
+    for (let i = 0; i < drops.length; i++) {
+      const char = CHARS[Math.floor(Math.random() * CHARS.length)];
+      const x = i * (width / drops.length) + 1;
+      const y = drops[i] * FONT;
+      ctx.fillStyle = "rgba(220,255,236,0.92)";
+      ctx.fillText(char, x, y);
+      if (drops[i] > 1) {
+        const char2 = CHARS[Math.floor(Math.random() * CHARS.length)];
+        ctx.fillStyle = accent;
+        ctx.globalAlpha = 0.8;
+        ctx.fillText(char2, x, y - FONT);
+        ctx.globalAlpha = 1;
+      }
+      drops[i] += speeds[i];
+      if (y > height && Math.random() > 0.976) {
+        drops[i] = 0;
+        speeds[i] = 0.55 + Math.random() * 0.9;
+      }
+    }
+  }
+
+  let started = false;
+
+  return {
+    start(el) {
+      if (started) return; // rAF loop survives reboots — don't double-start
+      started = true;
+      canvas = el;
+      ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      resize();
+      window.addEventListener("resize", resize);
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(draw);
+    },
+  };
+})();
+
+/* ---------- clock ---------- */
+function startClock() {
+  const tick = () => {
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, "0");
+    const mm = String(now.getMinutes()).padStart(2, "0");
+    $("tray-clock").textContent = hh + ":" + mm;
+    $("lock-clock").textContent = hh + ":" + mm;
+    $("lock-date").textContent = now.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+  };
+  tick();
+  setInterval(tick, 1000);
+}
+/* ================================================================== */
+/* Part 2a: campaign data — the OBSIDIAN surveillance conspiracy       */
+/* (ported 1:1 from the hosted build's data.ts)                        */
+/* ================================================================== */
+
+const MISSIONS = [
+  /* ---------------------------------------------------------------- */
+  {
+    id: "m1", num: 1, title: "Warm Welcome", client: "Marco from Pizza Palace",
+    difficulty: 1, payout: 150, xp: 120, minLevel: 1,
+    entryDomain: "pizzapalace.local",
+    brief: [
+      "Marco runs a pizzeria on the east side. His point-of-sale started charging customers twice last week, and he swears he didn't touch anything.",
+      "He can't afford a security firm, so he's paying under the table: pull the orders database off his router so a friend of his can look for tampering.",
+      "It's a home-grade router. Shouldn't take longer than a coffee.",
+    ],
+    outro: [
+      "[hub] contract #001 closed — client satisfied",
+      "The orders database is clean. The double-charging was a buggy card reader all along. Marco didn't need a hacker. He needed you anyway.",
+      "marco.palace: you actually got it?? you're a magician. pizza on the house. forever.",
+      "₡150 transferred. The hub logs your first successful contract.",
+    ],
+    hosts: [
+      {
+        ip: "192.168.1.1", name: "PP-Router", domain: "pizzapalace.local",
+        sshUser: "root", password: "pepperoni123",
+        objectiveOnCrack: "m1-crack", objectiveOnShell: "m1-shell",
+        ports: [{ port: 22, service: "ssh", banner: "OpenSSH 8.2p1 (auth: root)" }],
+        files: [
+          {
+            name: "orders.db", objectiveOnExfil: "m1-exfil",
+            content: [
+              "SQLITE — pizza_palace/orders (2024-2025)",
+              "------------------------------------------------------",
+              "order 10441 · margherita xl · card · 14.00 · ok",
+              "order 10442 · pepperoni l   · cash · 12.50 · ok",
+              "order 10443 · quattro f.    · card · 17.00 · DOUBLE CHARGED",
+              "order 10444 · marinara m    · cash ·  9.00 · ok",
+              "... (1,204 rows)",
+            ],
+          },
+          {
+            name: "motd.txt",
+            content: [
+              "############################################",
+              "#  PP-ROUTER  ·  firmware v2.1.7          #",
+              "#  DO NOT unplug during business hours     #",
+              "#  password hint: marco's favorite topping #",
+              "############################################",
+            ],
+          },
+        ],
+      },
+    ],
+    objectives: [
+      { id: "m1-crack", label: "Crack the router password (hydra)" },
+      { id: "m1-shell", label: "Open a root shell on the router" },
+      { id: "m1-exfil", label: "Exfiltrate orders.db" },
+    ],
+    hints: [
+      "resolve the target first: nslookup pizzapalace.local",
+      "map the router's open services: nmap 192.168.1.1",
+      "brute-force the ssh login: hydra 192.168.1.1",
+      "log in with what hydra found: ssh root@192.168.1.1",
+      "see what's on the box, then take the prize: ls, then exfil orders.db",
+    ],
+  },
+
+  /* ---------------------------------------------------------------- */
+  {
+    id: "m2", num: 2, title: "Lost and Found", client: "A grieving daughter",
+    difficulty: 1, payout: 200, xp: 140, minLevel: 1,
+    entryDomain: "vault.cirrusbackup.io",
+    brief: [
+      "Her father passed away last spring. Fifteen years of family photos sit in his account at Cirrus Backup — a budget cloud service.",
+      "Their policy wipes 'inactive' accounts 30 days after the account holder dies. They offered to release the archive for a ₡400 'estate processing fee'.",
+      "The account was his. The photos are hers. Take them back.",
+    ],
+    outro: [
+      "[hub] contract #002 closed — client satisfied",
+      "photos_2019.tar extracted: 2,304 photos. Birthdays. A golden retriever named Biscuit. One extremely blurry UFO.",
+      "A message arrives: 'he would have hated paying them. thank you.'",
+      "₡200 transferred. The hub bumps your clearance — harder contracts are now visible.",
+    ],
+    hosts: [
+      {
+        ip: "45.62.180.9", name: "Cirrus Vault", domain: "vault.cirrusbackup.io",
+        sshUser: "admin", password: "backup4life",
+        objectiveOnShell: "m2-shell",
+        ports: [
+          { port: 21, service: "ftp", banner: "vsftpd 3.0.3 — anonymous disabled" },
+          { port: 22, service: "ssh", banner: "OpenSSH 7.4 (auth: admin)" },
+        ],
+        files: [
+          {
+            name: "readme.txt",
+            content: [
+              "CIRRUS VAULT — node 09 admin notes",
+              "- shell access is admin-only (support@cirrusbackup.io)",
+              "- rotation: tapes sundays, integrity check wednesdays",
+              "- LEGAL HOLD: do not delete photos_2019.tar (estate case #5571)",
+              "- someone keeps emailing about a 'fee'. accounting's idea, not mine.",
+            ],
+          },
+          {
+            name: "photos_2019.tar", objectiveOnExfil: "m2-exfil",
+            content: [
+              "tar: photos_2019.tar — 2,304 files, 1.8 GB",
+              "biscuit_001.jpg ... biscuit_812.jpg",
+              "birthday_2003/ ... birthday_2019/",
+              "ufo_blurry_FINAL_v3.jpg",
+            ],
+          },
+        ],
+      },
+    ],
+    objectives: [
+      { id: "m2-shell", label: "Open a shell on the vault" },
+      { id: "m2-exfil", label: "Exfiltrate photos_2019.tar" },
+    ],
+    hints: [
+      "the vault's address first: nslookup vault.cirrusbackup.io",
+      "see which doors are open: nmap 45.62.180.9",
+      "the readme on the box names the account with shell access — cat readme.txt",
+      "crack the admin login: hydra 45.62.180.9, then ssh admin@45.62.180.9",
+      "the prize: exfil photos_2019.tar",
+    ],
+  },
+
+  /* ---------------------------------------------------------------- */
+  {
+    id: "m3", num: 3, title: "Phish Food", client: "Fraud buster collective",
+    difficulty: 2, payout: 250, xp: 170, minLevel: 2,
+    entryDomain: "verify.greedybank-secure.com",
+    brief: [
+      "'GreedyBank Secure' is not a bank. It's a phishing kit that's been draining small accounts for eight months — and the people it hits can't afford lawyers.",
+      "A fraud-buster collective has been mapping the operation. They need the victim list to force a takedown, and they want the site dead before Monday.",
+      "The box is firewalled. Route through your proxy chain, or you'll be scanning a brick wall.",
+    ],
+    outro: [
+      "[hub] contract #003 closed — client satisfied",
+      "victims.csv lands with the collective. Banks start issuing refunds by Thursday.",
+      "The phishing panel goes dark mid-scam. Somewhere, an operator screams at a monitor.",
+      "₡250 transferred. The collective adds you to a very short list of trusted hands.",
+    ],
+    hosts: [
+      {
+        ip: "93.184.71.4", name: "Phish Tank", domain: "verify.greedybank-secure.com",
+        sshUser: "root", password: "hunter2hunter",
+        firewall: true,
+        ports: [
+          { port: 80, service: "http", banner: "nginx 1.18 — 'verify your account' panel" },
+          { port: 22, service: "ssh", banner: "OpenSSH 8.9 (auth: root)" },
+        ],
+        files: [
+          {
+            name: "victims.csv", objectiveOnExfil: "m3-exfil",
+            content: [
+              "email,card_last4,total_skimmed",
+              "m.alvarez@----,4417,320.00",
+              "d.kowalski@----,0093,87.50",
+              "r.okafor@----,7712,1204.00",
+              "... (18,422 rows)",
+            ],
+          },
+          {
+            name: "server.conf",
+            content: [
+              "# greedybank-secure phishing panel",
+              "server_name verify.greedybank-secure.com",
+              "ssl off  # too expensive, lol",
+              "skim_rate 0.03",
+              "operator: root",
+              "# note: enable the firewall before the weekend audit — t.",
+            ],
+          },
+        ],
+        disableNodes: [
+          {
+            id: "phishing-site", label: "phishing-site", objectiveId: "m3-disable",
+            result: [
+              "[sabotage] nginx workers killed — panel returns 502 forever",
+              "[sabotage] the kit's Telegram bot is now asking itself for OTP codes",
+            ],
+          },
+        ],
+      },
+    ],
+    objectives: [
+      { id: "m3-exfil", label: "Exfiltrate victims.csv" },
+      { id: "m3-disable", label: "Disable the phishing-site node" },
+    ],
+    hints: [
+      "firewall ahead — turn your chain on first: proxy on",
+      "resolve the fake bank: nslookup verify.greedybank-secure.com",
+      "scan through the proxy: nmap 93.184.71.4",
+      "crack root, then log in: hydra 93.184.71.4 → ssh root@93.184.71.4",
+      "two objectives: exfil victims.csv, then disable phishing-site",
+    ],
+  },
+
+  /* ---------------------------------------------------------------- */
+  {
+    id: "m4", num: 4, title: "Inside Job", client: "Anonymous whistleblower",
+    difficulty: 2, payout: 350, xp: 200, minLevel: 2,
+    entryDomain: "mail.novalogistics.com",
+    brief: [
+      "Someone inside Nova Logistics is leaking executive schedules to a cargo-theft ring. A whistleblower found the trail — and it ends at payroll.",
+      "The salary database sits on an internal host the company thinks is invisible. It isn't. Get in through the mail relay, hop to the core, pull the file.",
+      "The 'consultant' line item is the story. Bring it into the light.",
+    ],
+    outro: [
+      "[hub] contract #004 closed — client satisfied",
+      "salary_data.xlsx goes to a journalist who has been waiting two years for this exact spreadsheet.",
+      "The ₡780,000 'consultant'? Regional director's brother-in-law. And the brother-in-law runs the theft ring.",
+      "₡350 transferred. Two arrests make the evening news. Nobody mentions you.",
+    ],
+    hosts: [
+      {
+        ip: "84.17.52.3", name: "Mail Relay", domain: "mail.novalogistics.com",
+        sshUser: "sysadmin", password: "parcel$$99",
+        objectiveOnShell: "m4-shell",
+        ports: [
+          { port: 25, service: "smtp", banner: "Postfix smtpd — relay for novalogistics.com" },
+          { port: 22, service: "ssh", banner: "OpenSSH 7.2 (auth: sysadmin)" },
+        ],
+        files: [
+          {
+            name: "creds.txt", grantsCredsFor: "10.0.0.5",
+            content: [
+              "# NOVALOGISTICS — internal access sheet (do not commit!)",
+              "core-db: 10.0.0.5",
+              "user: admin",
+              "pass: N0va!DB22",
+              "NOTE: 10.0.0.5 is unroutable from outside. shell into the",
+              "relay first, then hop. this file is why we don't do security",
+              "training over email.  — d.",
+            ],
+          },
+          {
+            name: "audit.log",
+            content: [
+              "03-12 04:12  sysadmin login OK (10.0.0.2)",
+              "03-14 09:40  ALERT: 3 failed logins from 185.220.9.7 (ignored)",
+              "03-15 02:33  user 'admin' exported salary_data.xlsx  (??)",
+              "03-15 02:35  user 'admin' opened the audit log viewer",
+            ],
+          },
+        ],
+      },
+      {
+        ip: "10.0.0.5", name: "Core DB", internal: true, reachableFrom: "84.17.52.3",
+        sshUser: "admin", password: "N0va!DB22",
+        objectiveOnShell: "m4-pivot",
+        ports: [
+          { port: 22, service: "ssh", banner: "OpenSSH 8.4 (auth: admin)" },
+          { port: 3306, service: "mysql", banner: "MySQL 8.0.32 — payroll" },
+        ],
+        files: [
+          {
+            name: "salary_data.xlsx", objectiveOnExfil: "m4-exfil",
+            content: [
+              "XLSX — nova_logistics/payroll_2025.xlsx",
+              "---------------------------------------",
+              "role              count      median",
+              "driver            214        ₡31,200",
+              "warehouse         96         ₡27,850",
+              "dispatcher        22         ₡41,000",
+              "'consultant *'      1        ₡780,000",
+              "* no department · no schedule · paid to shell company ORYX LLC",
+            ],
+          },
+          {
+            name: "audit.log",
+            content: [
+              "02:33  admin → SELECT * FROM payroll (4,180 rows)",
+              "02:33  admin → COPY TO /tmp/salary_data.xlsx",
+              "02:34  admin → DELETE FROM audit WHERE ts > now() - 1h",
+              "02:34  root  → INSERT INTO audit (fake rows) -- nice try",
+            ],
+          },
+        ],
+      },
+    ],
+    objectives: [
+      { id: "m4-shell", label: "Open a shell on the mail relay" },
+      { id: "m4-pivot", label: "Pivot to the internal Core DB (10.0.0.5)" },
+      { id: "m4-exfil", label: "Exfiltrate salary_data.xlsx" },
+    ],
+    hints: [
+      "start at the mail server: nslookup mail.novalogistics.com → nmap 84.17.52.3",
+      "the sysadmin account is the way in: hydra 84.17.52.3",
+      "read everything on the relay: ls → cat creds.txt",
+      "10.0.0.5 is internal — hold the relay shell first, then ssh admin@10.0.0.5 from it",
+      "the prize on the core box: exfil salary_data.xlsx",
+    ],
+  },
+
+  /* ---------------------------------------------------------------- */
+  {
+    id: "m5", num: 5, title: "The Leaked List", client: "Data rights NGO",
+    difficulty: 3, payout: 400, xp: 220, minLevel: 3,
+    entryDomain: "cdn.streamleak.tv",
+    brief: [
+      "StreamLeak is a streaming site with a strange side business: a 'confidential' tier whose customer list reads like a blackmail spreadsheet.",
+      "The list is encrypted with a key held by Obsidian Corp — the quiet holding company that seems to own half the internet's seedy infrastructure. First time you'll hear that name. Not the last.",
+      "An NGO wants the list. Get the key from their vault, decrypt the database, and hand the whole mess over.",
+    ],
+    outro: [
+      "[hub] contract #005 closed — client satisfied",
+      "customers.db.enc decrypted: 3,099 rows — judges, senators, three admirals, one game show host.",
+      "The NGO publishes. Two resignations by Friday. The name OBSIDIAN starts trending in all the wrong places.",
+      "₡400 transferred. Somewhere in a glass tower, someone adds you to a list of their own.",
+    ],
+    hosts: [
+      {
+        ip: "77.104.9.12", name: "Stream CDN", domain: "cdn.streamleak.tv",
+        sshUser: "root", password: "cdnadmin1",
+        ports: [
+          { port: 22, service: "ssh", banner: "OpenSSH 8.2 (auth: root)" },
+          { port: 443, service: "https", banner: "nginx — CDN edge cache" },
+          { port: 8080, service: "http", banner: "cache-purge API (open!)" },
+        ],
+        files: [
+          {
+            name: "customers.db.enc", keyId: "obsidian-key", objectiveOnDecrypt: "m5-decrypt",
+            content: [
+              "00000000  9f 3a 77 d0 4c 1e 8b 22  aa 41 0e 7c 5b f9 2d 88",
+              "00000010  c4 19 66 3d 0f 8a 51 b7  e0 2c 9d 63 14 7a f0 08",
+              "(binary blob — AES-256-CBC · keyId: obsidian-key)",
+            ],
+            decryptedPreview: [
+              "STREAMLEAK 'confidential' customer list",
+              "name                 plan      notes",
+              "senator R. H----     premium   invoiced to campaign funds",
+              "judge A. M----       premium   flagged: 'leverage'",
+              "... 3,097 more rows",
+            ],
+          },
+          {
+            name: "config.env",
+            content: [
+              "EDGE_NODE=eu-west-3",
+              "CACHE_TTL=300",
+              "KEYSERVER=vault.obsidian-corp.net",
+              "KEYPATH=keys/obsidian.key",
+              "BILLING_CONTACT=billing@obsidian-corp.net   # weird, for a CDN",
+            ],
+          },
+        ],
+      },
+      {
+        ip: "185.220.9.7", name: "Obsidian Vault", domain: "vault.obsidian-corp.net",
+        sshUser: "root", password: "0bsidianR0cks",
+        ports: [{ port: 22, service: "ssh", banner: "OpenSSH 9.1 (auth: root)" }],
+        files: [
+          {
+            name: "keys/obsidian.key", grantsKey: "obsidian-key", objectiveOnRead: "m5-key",
+            content: [
+              "-----BEGIN OBSIDIAN MASTER KEY-----",
+              "9f2c-11ee-beef-4a7d-0bsd-1an-5up3r-5ecre7",
+              "keyId:  obsidian-key",
+              "scope:  customer-* , ledger-* , eye-*",
+              "policy: rotate NEVER (management decision, do not ask)",
+              "-----END OBSIDIAN MASTER KEY-----",
+            ],
+          },
+          {
+            name: "access.log",
+            content: [
+              "10.0.0.51      GET /keys/obsidian.key  200  (weekly rotation check)",
+              "185.220.9.99   GET /keys/obsidian.key  200  (hourly)",
+              "185.220.9.14   GET /keys/obsidian.key  200  (hourly)",
+              "unknown        GET /keys/obsidian.key  403",
+              "unknown        GET /keys/obsidian.key  403",
+            ],
+          },
+        ],
+      },
+    ],
+    objectives: [
+      { id: "m5-key", label: "Obtain the Obsidian master key" },
+      { id: "m5-decrypt", label: "Decrypt customers.db.enc" },
+    ],
+    hints: [
+      "two hosts this time. start with the CDN: nslookup cdn.streamleak.tv → nmap 77.104.9.12",
+      "the config names the keyserver: cat config.env",
+      "the vault: nslookup vault.obsidian-corp.net → nmap 185.220.9.7 → hydra",
+      "shell the vault and absorb the key: ssh root@185.220.9.7 → cat keys/obsidian.key",
+      "back on the CDN with the key in hand: ssh root@77.104.9.12 → decrypt customers.db.enc",
+    ],
+  },
+
+  /* ---------------------------------------------------------------- */
+  {
+    id: "m6", num: 6, title: "Ghost in the Wires", client: "The Intercept",
+    difficulty: 3, payout: 500, xp: 260, minLevel: 3,
+    entryDomain: "gw.isp-aurora.net",
+    brief: [
+      "A reporter's source inside Aurora ISP swears the 'lawful intercept' cage is mirroring traffic no court ever asked for — and billing it to a private company.",
+      "Get into the ISP gateway, find the intercept VLAN, and pull the logs. The story is the metadata: who ordered it, and who pays for it.",
+      "The name on the invoice will rhyme with a name you've heard before.",
+    ],
+    outro: [
+      "[hub] contract #006 closed — client satisfied",
+      "intercept_logs.tar lands on a journalist's desk. 62 GB of mirrored traffic, no court order anywhere in it.",
+      "Front page: 'OBSIDIAN CORP BOUGHT AN ISP'S EARS'. The company calls it 'infrastructure monitoring'.",
+      "₡500 transferred. Your alias starts appearing in internal memos. Wear it proudly.",
+    ],
+    hosts: [
+      {
+        ip: "62.210.33.8", name: "ISP Gateway", domain: "gw.isp-aurora.net",
+        sshUser: "root", password: "aurora-gw-77",
+        firewall: true,
+        ports: [
+          { port: 22, service: "ssh", banner: "OpenSSH 8.2 (auth: root)" },
+          { port: 179, service: "bgp", banner: "Quagga BGP daemon — AS42077" },
+          { port: 8081, service: "http", banner: "ISP admin panel (default creds!)" },
+        ],
+        files: [
+          {
+            name: "tap_config.txt",
+            content: [
+              "# lawful-intercept config — DO NOT SYNC TO GIT",
+              "tap enabled: 10.8.0.14",
+              "mirror ratio: 100%",
+              "retention: 90 days (regulation says 30)",
+              "billing: obsidian-corp.net / PO 77120-A",
+            ],
+          },
+          {
+            name: "netmap.txt",
+            content: [
+              "AURORA ISP — internal map (partial)",
+              "62.210.33.8    gw — you are here",
+              "10.8.0.0/24    intercept vlan",
+              "10.8.0.14      'the wiretap' — law-enforcement cage",
+              "access: user 'analyst' · ask D. for the password",
+            ],
+          },
+        ],
+      },
+      {
+        ip: "10.8.0.14", name: "The Wiretap", internal: true, reachableFrom: "62.210.33.8",
+        sshUser: "analyst", password: "ears-on-walls",
+        objectiveOnScan: "m6-find", objectiveOnShell: "m6-find",
+        ports: [
+          { port: 22, service: "ssh", banner: "OpenSSH 8.0 (auth: analyst)" },
+          { port: 5601, service: "pcapy", banner: "capture ring buffer — 40 Gbps" },
+        ],
+        files: [
+          {
+            name: "intercept_logs.tar", objectiveOnExfil: "m6-exfil",
+            content: [
+              "tar: intercept_logs.tar — 44,109 files, 62 GB",
+              "meta: 1.2M intercepted conversations",
+              "flags: 0.4% related to any crime, ever",
+              "billing: see PO 77120-A — 'storage overage'",
+            ],
+          },
+          {
+            name: "README.md",
+            content: [
+              "THE WIRETAP — evidence handling rules",
+              "1. do not read the intercepts. you are not law enforcement.",
+              "2. the people in here are called 'subjects'.",
+              "3. if a subject asks about the cage, they are 'curious'.",
+              "   curious subjects get a file. everyone has a file.",
+            ],
+          },
+        ],
+      },
+    ],
+    objectives: [
+      { id: "m6-find", label: "Locate the wiretap node (10.8.0.14)" },
+      { id: "m6-exfil", label: "Exfiltrate intercept_logs.tar" },
+    ],
+    hints: [
+      "the gateway is firewalled: proxy on, then nslookup gw.isp-aurora.net",
+      "scan and crack the gateway: nmap 62.210.33.8 → hydra → ssh root@62.210.33.8",
+      "the internal map is on the box: cat netmap.txt",
+      "the wiretap is 10.8.0.14 — nmap it while you hold the gateway shell, then ssh analyst@10.8.0.14",
+      "analyst login refusing? hydra 10.8.0.14 first — then exfil intercept_logs.tar",
+    ],
+  },
+
+  /* ---------------------------------------------------------------- */
+  {
+    id: "m7", num: 7, title: "Blackout Protocol", client: "The Resistance cell",
+    difficulty: 4, payout: 650, xp: 300, minLevel: 4,
+    entryDomain: "dc1.obsidian-corp.net",
+    brief: [
+      "Obsidian's DC1 datacenter is where the surveillance archive lives — every intercepted call, every scraped message, catalogued and sold. On Thursday it all gets replicated to a facility overseas. After that, no whistleblower will ever find it.",
+      "You can't delete the archive remotely. But a datacenter is just a building, and buildings have thermostats. Take over the cooling, force a thermal shutdown, and buy the world 72 hours while the tape robots sweat.",
+      "High risk. Obsidian knows someone is coming. Watch your trace.",
+    ],
+    outro: [
+      "[hub] contract #007 closed — client satisfied",
+      "Cooling goes offline at 03:12. Inlet temperature climbs. At 31°C the archive systems begin an orderly shutdown — 72 hours of 'scheduled maintenance'.",
+      "Resistance cells in four countries spend those 72 hours copying everything. The archive survives — but now everyone has it. Which was the point.",
+      "₡650 transferred. In DC1, a very confused HVAC technician resets a breaker.",
+    ],
+    hosts: [
+      {
+        ip: "185.220.9.14", name: "DC1 Control", domain: "dc1.obsidian-corp.net",
+        sshUser: "root", password: "Bl4ck0ut!",
+        firewall: true, objectiveOnShell: "m7-breach",
+        ports: [
+          { port: 22, service: "ssh", banner: "OpenSSH 8.9 (auth: root)" },
+          { port: 443, service: "https", banner: "Obsidian DC1 orchestrator" },
+          { port: 161, service: "snmp", banner: "NET-SNMP — cooling telemetry" },
+        ],
+        files: [
+          {
+            name: "cooling.status",
+            content: [
+              "DC1 COOLING STATUS — nominal",
+              "inlet 18.2°C · outlet 29.7°C · humidity 41%",
+              "CRITICAL THRESHOLD: 31°C (auto-shutdown at 34°C)",
+              "cooling node: 185.220.9.15 (user 'maint')",
+              "NOTE: cooling runs on a separate controller. if it fails,",
+              "the doors lock, the cameras die, and the tape robots sweat.",
+            ],
+          },
+          {
+            name: "hvac.pem",
+            content: [
+              "-----BEGIN MAINTENANCE CREDENTIAL-----",
+              "hvac node login: maint",
+              "password hint: the one thing this building is doing",
+              "(who writes hints into PEM files. honestly.)",
+              "-----END MAINTENANCE CREDENTIAL-----",
+            ],
+          },
+        ],
+      },
+      {
+        ip: "185.220.9.15", name: "HVAC Node",
+        sshUser: "maint", password: "c00ld0wn",
+        objectiveOnShell: "m7-hvac",
+        ports: [
+          { port: 22, service: "ssh", banner: "OpenSSH 7.9 (auth: maint)" },
+          { port: 161, service: "snmp", banner: "BACnet gateway (read-only)" },
+        ],
+        files: [
+          {
+            name: "maintenance.log",
+            content: [
+              "03-02  replaced belt on AHU-3",
+              "03-09  filter change, all units",
+              "03-15  'engineer' with no badge asked about the chillers.",
+              "       sent him to reception. reception says he never arrived.",
+            ],
+          },
+        ],
+        disableNodes: [
+          {
+            id: "cooling", label: "cooling", objectiveId: "m7-disable",
+            result: [
+              "[sabotage] chillers 1-4 set to minimum · pumps decoupled",
+              "[sabotage] alarms suppressed · BACnet reports 'nominal' to DC1",
+              "[sabotage] inlet temperature is now a stopwatch, not a reading",
+            ],
+          },
+        ],
+      },
+    ],
+    objectives: [
+      { id: "m7-breach", label: "Breach DC1 Control" },
+      { id: "m7-hvac", label: "Gain access to the HVAC node" },
+      { id: "m7-disable", label: "Disable cooling" },
+    ],
+    hints: [
+      "proxy on. always proxy on: nslookup dc1.obsidian-corp.net → nmap 185.220.9.14",
+      "breach DC1: hydra 185.220.9.14 → ssh root@185.220.9.14",
+      "read the status and the pem: cat cooling.status · cat hvac.pem",
+      "the HVAC node is at 185.220.9.15: nmap → hydra → ssh maint@185.220.9.15",
+      "when you're ready to be loud: disable cooling — and watch that trace meter",
+    ],
+  },
+
+  /* ---------------------------------------------------------------- */
+  {
+    id: "m8", num: 8, title: "The Obsidian Eye", client: "EVERYONE",
+    difficulty: 5, payout: 1000, xp: 400, minLevel: 4,
+    entryDomain: "eye.obsidian-corp.net",
+    brief: [
+      "This is the one. The Obsidian Eye — 41 terabytes of everyone's everything, sold by subscription, hidden in plain sight for six years.",
+      "Three things end it: the manifest (so the world knows what was taken), the kill-switch key (so it can never boot again), and the surveillance core itself (so it stops taking — tonight).",
+      "The client field on this contract says EVERYONE, because it is.",
+      "You won't get a thank-you. You'll get silence — the good kind.",
+    ],
+    outro: [
+      "[hub] contract #008 closed — final contract",
+      "The manifest is on every front page by sunrise. The kill-switch zeroizes 41 TB of archive keys. The surveillance core powers down mid-collection.",
+      "For the first time in six years, the Eye closes. Somewhere, 212 subscribers receive a very apologetic invoice credit.",
+    ],
+    epilogue: [
+      "E P I L O G U E",
+      "The darknet hub goes quiet for a day, then louder than ever. Obsidian Corp 'restructures'. A datacenter in the desert sells at auction.",
+      "A journalist asks her source who did it. The source says: 'someone whose name I never got. they typed fast and left no shadow.'",
+      "You close the laptop. The terminal hums. Somewhere out there, a pizzeria double-charges nobody at all.",
+      "",
+      "▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓",
+      "      GHOST PROTOCOL COMPLETE",
+      "▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓",
+      "[bonus] +990 XP — ghost protocol bonus: the network goes dark, and so do you.",
+    ],
+    hosts: [
+      {
+        ip: "185.220.9.99", name: "The Eye", domain: "eye.obsidian-corp.net",
+        sshUser: "root", password: "Saur0nWasRight",
+        firewall: true,
+        ports: [
+          { port: 22, service: "ssh", banner: "OpenSSH 9.3 (auth: root)" },
+          { port: 443, service: "https", banner: "the-eye API (unlisted)" },
+          { port: 9200, service: "elasticsearch", banner: "archive index — 41 TB" },
+        ],
+        files: [
+          {
+            name: "eye_manifest.dat", objectiveOnExfil: "m8-exfil",
+            content: [
+              "OBSIDIAN EYE — MASTER MANIFEST (v41)",
+              "subscribers: 212 (gov + private)",
+              "feeds: 1,447,301 (calls · messages · cameras)",
+              "retention: FOREVER (policy change 2023 — 'storage is cheap')",
+              "kill-switch: mirrored at 10.66.6.1 (root only)",
+            ],
+          },
+          {
+            name: "subscribers.txt",
+            content: [
+              "OBSIDIAN EYE — partial client list",
+              "ministry of interior (2 countries, prepaid)",
+              "triple-A shipping, 'market intelligence' division",
+              "a casino. a hedge fund. a very motivated divorce lawyer.",
+              "... 206 more",
+            ],
+          },
+        ],
+        disableNodes: [
+          {
+            id: "surveillance-core", label: "surveillance-core", objectiveId: "m8-disable",
+            result: [
+              "[sabotage] 1,447,301 feed collectors stopped mid-write",
+              "[sabotage] the intake queue is draining into /dev/null, where it belongs",
+            ],
+          },
+        ],
+      },
+      {
+        ip: "10.66.6.1", name: "Mirror Node", internal: true, reachableFrom: "185.220.9.99",
+        sshUser: "root", password: "l00king-gl4ss",
+        ports: [
+          { port: 22, service: "ssh", banner: "OpenSSH 9.3 (auth: root)" },
+          { port: 3128, service: "squid", banner: "offline mirror cache" },
+        ],
+        files: [
+          {
+            name: "kill-switch.key", objectiveOnRead: "m8-key", grantsKey: "eye-kill-switch",
+            content: [
+              "-----BEGIN KILL-SWITCH KEY-----",
+              "EYE-KILL-7734-DEAD-BEEF-1998-P4LANTIR-R3JECTED-TH4T-N4ME",
+              "scope:  the eye + all mirrors",
+              "effect: hard power-off · archive keys zeroized · 30-day cooldown",
+              "note from the architect: 'if you're reading this, I failed.",
+              "but maybe you didn't.'  — v.",
+              "-----END KILL-SWITCH KEY-----",
+            ],
+          },
+          {
+            name: "mirror.log",
+            content: [
+              "replication: eye → mirror (41.2 TB)  OK",
+              "heartbeat:  00:00:03.000",
+              "anomalies:  1 — unauthorized key access from 'inside' (flagged LOW)",
+              "            (it was flagged LOW. that is the whole problem.)",
+            ],
+          },
+        ],
+      },
+    ],
+    objectives: [
+      { id: "m8-exfil", label: "Exfiltrate eye_manifest.dat" },
+      { id: "m8-key", label: "Obtain the kill-switch key" },
+      { id: "m8-disable", label: "Disable surveillance-core" },
+    ],
+    hints: [
+      "the big one. proxy on, always: nslookup eye.obsidian-corp.net → nmap 185.220.9.99",
+      "breach the eye: hydra 185.220.9.99 → ssh root@185.220.9.99",
+      "read the manifest: cat eye_manifest.dat — it names the mirror node",
+      "the mirror is inside: ssh root@10.66.6.1 → cat kill-switch.key",
+      "three objectives total — 'status' shows what's left. finish all of them.",
+    ],
+  },
+];
+
+/* ---------- lookups (data.ts) ---------- */
+function missionByNum(n) { return MISSIONS.find((m) => m.num === n); }
+function missionById(id) { return MISSIONS.find((m) => m.id === id); }
+function hostByIp(mission, ip) { return mission.hosts.find((h) => h.ip === ip); }
+function fileOnHost(host, name) {
+  const q = String(name).trim().toLowerCase();
+  return host.files.find((f) => f.name.toLowerCase() === q);
+}
+function fakeSize(name) {
+  let h = 7;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % 100003;
+  const kb = 1 + (h % 2400);
+  if (kb >= 1024) return (kb / 1024).toFixed(1) + " MB";
+  return kb + " KB";
+}
+/* ================================================================== */
+/* Part 3: engine — pure game logic (ported 1:1 from engine.ts)        */
+/* ================================================================== */
+
+const OBJECTIVE_XP = 25;
+const FINAL_MISSION_ID = "m8";
+const FINAL_BONUS_XP = 990;
+
+/* ---------- levels & ranks ---------- */
+
+const RANKS = {
+  1: "Script Kiddie",
+  2: "Packet Pusher",
+  3: "Wire Ghost",
+  4: "Net Runner",
+  5: "Cipher Punk",
+  6: "Ghost Operator",
+};
+
+const GHOST_SUFFIX = ["II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "∞"];
+
+function thresholdFor(level) {
+  if (level <= 1) return 0;
+  if (level === 2) return 300;
+  if (level === 3) return 750;
+  if (level === 4) return 1400;
+  return 2300 + (level - 5) * 1000;
+}
+
+function levelFor(xp) {
+  if (xp < 300) return 1;
+  if (xp < 750) return 2;
+  if (xp < 1400) return 3;
+  if (xp < 2300) return 4;
+  return 5 + Math.floor((xp - 2300) / 1000);
+}
+
+function rankFor(level) {
+  if (level >= 7) return "Ghost Operator " + GHOST_SUFFIX[Math.min(level - 7, GHOST_SUFFIX.length - 1)];
+  return RANKS[level] || "Script Kiddie";
+}
+
+function xpProgress(xp) {
+  const level = levelFor(xp);
+  const base = thresholdFor(level);
+  const nextAt = thresholdFor(level + 1);
+  const span = nextAt - base;
+  const into = xp - base;
+  const pct = span > 0 ? Math.max(0, Math.min(100, Math.round((into / span) * 100))) : 0;
+  return { level, rank: rankFor(level), into, span, nextAt, pct };
+}
+
+/* ---------- trace ---------- */
+
+function traceGain(base, proxyOn) {
+  return proxyOn ? Math.ceil(base / 2) : base;
+}
+
+function traceInfo(trace) {
+  if (trace < 25) return { word: "CLEAR", color: "#4ade80" };
+  if (trace < 50) return { word: "ELEVATED", color: "#fbbf24" };
+  if (trace < 75) return { word: "HIGH", color: "#fb923c" };
+  return { word: "CRITICAL", color: "#f87171" };
+}
+
+/* ---------- save construction & defensive parsing ---------- */
+
+function freshRuntime(missionId) {
+  return {
+    missionId,
+    trace: 0,
+    proxyOn: false,
+    shellHost: null,
+    cracked: {},
+    discovered: [],
+    scanned: [],
+    objectivesDone: [],
+    filesRead: [],
+    keysHeld: [],
+    nodesDisabled: [],
+    hintIndex: 0,
+  };
+}
+
+function freshSave() {
+  return { level: 1, xp: 0, credits: 0, completed: [], active: null, gen: [], genSeq: 101 };
+}
+
+function num(v, fallback) {
+  const n = Number(v);
+  return Number.isFinite(n) && n >= 0 ? n : fallback;
+}
+
+function strArr(v) {
+  return Array.isArray(v) ? v.filter((x) => typeof x === "string") : [];
+}
+
+function strRecord(v) {
+  if (!v || typeof v !== "object" || Array.isArray(v)) return {};
+  const out = {};
+  for (const k of Object.keys(v)) {
+    if (typeof v[k] === "string") out[k] = v[k];
+  }
+  return out;
+}
+
+/** validate an arbitrary localStorage payload into a clean save */
+function parseSave(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return freshSave();
+  const raw = value;
+
+  const xp = Math.floor(num(raw.xp, 0));
+  const credits = Math.floor(num(raw.credits, 0));
+  const completed = strArr(raw.completed);
+  const gen = (Array.isArray(raw.gen) ? raw.gen : []).filter(isMissionValid);
+  const genSeq = Math.max(101, Math.floor(num(raw.genSeq, 101)));
+
+  let active = null;
+  if (raw.active && typeof raw.active === "object" && !Array.isArray(raw.active)) {
+    const a = raw.active;
+    const missionId = typeof a.missionId === "string" ? a.missionId : "";
+    const mission = MISSIONS.find((m) => m.id === missionId) || gen.find((m) => m.id === missionId);
+    // drop an active mission that is unknown or already completed
+    if (mission && !completed.includes(missionId)) {
+      const ips = new Set(mission.hosts.map((h) => h.ip));
+      const objIds = new Set(mission.objectives.map((o) => o.id));
+      const fileKeys = new Set();
+      for (const h of mission.hosts) for (const f of h.files) fileKeys.add(h.ip + "/" + f.name);
+      const nodeIds = new Set();
+      for (const h of mission.hosts) for (const n of (h.disableNodes || [])) nodeIds.add(n.id);
+      const hintCount = mission.hints.length;
+
+      active = {
+        missionId,
+        trace: Math.max(0, Math.min(100, Math.floor(num(a.trace, 0)))),
+        proxyOn: a.proxyOn === true,
+        shellHost: typeof a.shellHost === "string" && ips.has(a.shellHost) ? a.shellHost : null,
+        cracked: (() => {
+          const out = {};
+          const cr = strRecord(a.cracked);
+          for (const ip of Object.keys(cr)) if (ips.has(ip)) out[ip] = cr[ip];
+          return out;
+        })(),
+        discovered: strArr(a.discovered).filter((ip) => ips.has(ip)),
+        scanned: strArr(a.scanned).filter((ip) => ips.has(ip)),
+        objectivesDone: strArr(a.objectivesDone).filter((id) => objIds.has(id)),
+        filesRead: strArr(a.filesRead).filter((k) => fileKeys.has(k)),
+        keysHeld: strArr(a.keysHeld),
+        nodesDisabled: strArr(a.nodesDisabled).filter((id) => nodeIds.has(id)),
+        hintIndex: Math.max(0, Math.min(hintCount, Math.floor(num(a.hintIndex, 0)))),
+      };
+    }
+  }
+
+  return { level: levelFor(xp), xp, credits, completed, active, gen, genSeq };
+}
+/* ================================================================== */
+/* Part 4: generative mission system (offline)                          */
+/*                                                                      */
+/* The hosted build has TWO story sources:                              */
+/*   1. proceduralStory() — local template pools (always available)     */
+/*   2. /api/genmission — server-side LLM noir briefs (needs network)   */
+/* This standalone build is 100% offline: source 2 is intentionally     */
+/* omitted and every bounty is authored by the procedural generator     */
+/* below — millions of combinations, zero network calls.                */
+/*                                                                      */
+/* storyToMission() wires mechanics (hosts, creds, keys, trace scale,   */
+/* objectives, hints) onto the story so every generated contract is     */
+/* guaranteed playable with the proven engine:                         */
+/*   nslookup → nmap → hydra → ssh → ls/cat → exfil/decrypt/disable     */
+/* ================================================================== */
+
+/* ---------- difficulty tiers ---------- */
+
+const TIERS = {
+  1: { payout: [120, 180], xp: [90, 120], minLevel: 1 },
+  2: { payout: [240, 340], xp: [160, 200], minLevel: 2 },
+  3: { payout: [420, 560], xp: [250, 310], minLevel: 3 },
+  4: { payout: [650, 850], xp: [380, 460], minLevel: 4 },
+  5: { payout: [950, 1250], xp: [540, 660], minLevel: 5 },
+};
+
+function clampDifficulty(d) {
+  return Math.max(1, Math.min(5, Math.round(d)));
+}
+
+function hostCountFor(d) {
+  const c = clampDifficulty(d);
+  return c <= 2 ? 1 : c <= 4 ? 2 : 3;
+}
+
+/** trace gains scale with difficulty (D1 = 1.0 … D5 = 1.48) */
+function traceScaleFor(d) {
+  return 1 + 0.12 * (clampDifficulty(d) - 1);
+}
+
+/** roll a difficulty appropriate for the player's level */
+function rollDifficulty(level) {
+  const max = Math.max(1, Math.min(5, Math.floor(level)));
+  const min = Math.max(1, max - 2);
+  return min + Math.floor(Math.random() * (max - min + 1));
+}
+
+/* ---------- randomness helpers ---------- */
+
+function pick(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function randInt(a, b) {
+  return a + Math.floor(Math.random() * (b - a + 1));
+}
+
+function randPublicIp() {
+  return pick([45, 62, 91, 103, 141, 185, 192]) + "." + randInt(10, 250) + "." + randInt(10, 250) + "." + randInt(2, 250);
+}
+
+function randInternalIp() {
+  return "10.0." + randInt(1, 20) + "." + randInt(2, 250);
+}
+
+/* ---------- procedural story pools ---------- */
+
+const ORG_PREFIXES = [
+  "iron", "apex", "vanta", "halcyon", "onyx", "crimson", "meridian", "quantum",
+  "cobalt", "aegis", "spire", "umbral", "northgate", "blackpine", "redshift",
+  "zenith", "corsair", "drakon", "saellite", "vexhold",
+];
+
+const ORG_CORES = [
+  "logistics", "biotech", "holdings", "media", "security", "payments", "cloud",
+  "labs", "capital", "energy", "foods", "realty", "systems", "networks",
+  "analytics", "robotics", "pharma", "maritime", "insure", "freight",
+];
+
+const ORG_TLDS = [".com", ".io", ".net", ".corp", ".sys"];
+
+const CLIENTS = [
+  "a night-shift ER nurse", "a retired fraud auditor", "an anonymous whistleblower",
+  "nullbyte (darknet handle)", "a small-town journalist", "a furious ex-employee",
+  "a burnt-out private investigator", "a scared comp-sci student", "a union organizer",
+  "a debt collector with a conscience", "a widow drowning in paperwork",
+  "a farm cooperative treasurer", "vex_7 (darknet handle)", "a rideshare driver with screenshots",
+  "an overworked pharmacist", "a city clerk who saw too much", "a marine biologist with odd samples",
+  "a hotel night manager", "cr0w (darknet handle)", "an arcade owner with old debts",
+];
+
+const MOTIVES = [
+  "{org} drained her pension and filed it under 'administrative error'.",
+  "{org} is dumping solvent into the river at 2 AM. Every week.",
+  "{org}'s 'anonymous' tip line logs every caller's number.",
+  "{org} sold a patient database to a spam empire last quarter.",
+  "{org} fired the whole floor two weeks before vesting.",
+  "{org} runs a fake charity on the side. The paperwork is immaculate.",
+  "{org} owns the judge, the paper, and the police pension fund.",
+  "{org} buried a safety report that would have saved four workers.",
+  "{org} is quietly price-fixing medicine across three states.",
+  "{org} 'lost' the security footage from the night it mattered.",
+  "{org} blacklists anyone who asks about overtime.",
+  "{org} tracks its warehouse workers' bathroom breaks.",
+  "{org} is about to dox its own whistleblowers to 'verify loyalty'.",
+  "{org} launders campaign money through fake catering invoices.",
+  "{org} repossessed a truck from a driver still making payments on it.",
+  "{org} cloned a rival's product, then sued them for the original.",
+  "{org} runs a scam 'academy' that eats federal grants.",
+  "{org} paid off a ransomware crew twice and called it 'vendor costs'.",
+  "{org} fired the safety inspector, then reported zero incidents.",
+  "{org} is buying the homes out from under its own evicted tenants.",
+];
+
+const ASKS = [
+  "the proof is in their own files — get the archive out where it can't be buried.",
+  "pull the export before their lawyers ghost it. client wants it whole.",
+  "take the records. every row. leave the rest untouched.",
+  "the manifest is the smoking gun — exfiltrate it.",
+  "grab the registry. names, numbers, timestamps.",
+  "the buyer list ties everything together. take it all.",
+  "get the spreadsheet onto the hub before their quarterly 'audit'.",
+  "the log file doesn't lie. make sure everyone gets to read it.",
+];
+
+const WARNINGS = [
+  "their security budget went to the CEO's yacht, not the servers.",
+  "an inside source says a bluebird unit watches the logs after hours.",
+  "whatever you do, don't trip the alarms before sunrise.",
+  "the sysadmin sleeps with a pager under the pillow. be quick.",
+  "rumor says they bought an AI intrusion detector. rumor also says it's set to 'idle'.",
+  "the last operator who tried is now a cautionary podcast episode.",
+  "they patched everything last month. almost everything.",
+  "their intern is smarter than their whole IT department. watch the intern.",
+];
+
+const CONSEQUENCES = [
+  "three days later the story is everywhere. {org} stock opens 14% down.",
+  "regulators 'suddenly discover' the evidence. funny how that works.",
+  "a class action is filed before lunch. two more follow by dinner.",
+  "the archive hits every newsroom at once. denials by breakfast.",
+  "their lawyers call it 'a misunderstanding'. nobody believes them.",
+  "someone in accounting quietly confesses. it only takes one.",
+  "the union votes to strike the same night.",
+  "two board members 'resign to spend time with family'.",
+  "the attorney general's office opens a file with your exfil attached.",
+  "{org} rebrands within a month. same logo, different font.",
+];
+
+const CLIENT_MESSAGES = [
+  "'you actually did it. i don't know how to thank you.'",
+  "'my father can rest now. thank you.'",
+  "'burn it all down. here's what i promised.'",
+  "'i never saw you. you never saw me. payment is clean.'",
+  "'they're calling it an inside job. let them.'",
+  "'you're a ghost. a beautiful, terrible ghost.'",
+  "'the hub transferred it before i finished typing. well earned.'",
+  "'when this is over i'm buying a farm. far away from servers.'",
+];
+
+const TITLE_NOUNS = [
+  "Ledger", "Tapes", "Vault", "Cipher", "Witness", "Archive", "Backdoor",
+  "Signal", "Manifest", "Papercut", "Deadbolt", "Smokescreen", "Watchlist",
+  "Ledger", "Firewall", "Package", "Freight", "Ledger", "Dummy", "Uplink",
+];
+
+const TITLE_ADJS = [
+  "Quiet", "Crooked", "Frozen", "Velvet", "Hollow", "Bitter", "Rusted",
+  "Silent", "Broken", "Midnight", "Paper", "Iron", "Last", "False", "Warm",
+];
+
+const TITLE_ONEWORD = [
+  "NULLTRACE", "DEADBOLT", "PAPER GHOST", "COLD ARCHIVE", "NIGHT SHIFT",
+  "GLASS JAW", "SIGNAL BLEED", "KETTLE", "SEVEN PERCENT", "TAP WATER",
+  "FALSE POSITIVE", "HOT COPIES", "SOFT TARGET", "DRY CLEANERS",
+];
+
+const PRIZES = [
+  {
+    name: "ledger_2024.db",
+    make: (org) => [
+      "SQLITE — " + org + "/ledger (FY2024-FY2025)",
+      "------------------------------------------------------",
+      "txn 8841 · retainer · 'ASPEN VENTURES (shell)' · 2,400,000 · flagged? no",
+      "txn 8842 · consulting · 'GRAY PEAK ADVISORY' · 1,150,000 · flagged? no",
+      "txn 8843 · catering · 4,411 identical invoices · flagged? no",
+      "txn 8844 · 'data services' · offshore · 990,000 · Laundering-Score 0.94",
+      "... (18,241 rows)",
+    ],
+  },
+  {
+    name: "donations.csv",
+    make: (org) => [
+      "CSV — " + org + " / donor_records (unofficial copy)",
+      "------------------------------------------------------",
+      "2024-03-02 · 'R. CALLOWAY' · 250.00 · memo: 'for the kids'",
+      "2024-03-02 · 'R. CALLOWAY' · 250.00 · memo: 'for the kids' (x40)",
+      "2024-04-11 · ANONYMOUS · 480,000.00 · routed via cayman acct",
+      "2024-06-19 · shell-corps total: 61 · sum: 12,004,500.00",
+      "... (rows 1,014)",
+    ],
+  },
+  {
+    name: "payroll_export.xlsx",
+    make: (org) => [
+      "XLSX — " + org + " / payroll_master (do not distribute)",
+      "------------------------------------------------------",
+      "employee 0712 · warehouse · overtime claimed 0h · actual 612h",
+      "employee 0713 · warehouse · overtime claimed 0h · actual 588h",
+      "employee 0714 · warehouse · overtime claimed 0h · actual 703h",
+      "adjustment column header: 'plausible deniability'",
+      "... (sheet 2 of 9)",
+    ],
+  },
+  {
+    name: "tipline_logs.db",
+    make: (org) => [
+      "SQLITE — " + org + " / 'anonymous' tip line",
+      "------------------------------------------------------",
+      "call 0031 · caller-id captured: +1-555-0142 · flagged 'dissatisfied'",
+      "call 0032 · caller-id captured: +1-555-0177 · forwarded: legal",
+      "call 0033 · caller-id captured: +1-555-0142 · tagged: 'repeat'",
+      "memo: 'number harvesting pays for itself' — mgmt",
+      "... (905 calls)",
+    ],
+  },
+  {
+    name: "buyer_list.json",
+    make: (org) => [
+      "JSON — " + org + " / customer_master (god mode dump)",
+      "------------------------------------------------------",
+      '{"source": "' + org + '", "records": 214883, "fields": ["ssn_hash", "phone", "email", "address", "purchase_history"]}',
+      '{"buyer": "MERIDIAN SPAM GROUP", "price": "per-10k"}',
+      '{"buyer": "VOTEalytics", "segments": ["voters", "protesters", "donors"]}',
+      "note: 'regulatory? never heard of it' — sales",
+    ],
+  },
+  {
+    name: "safety_report.pdf.txt",
+    make: (org) => [
+      "OCR — " + org + " / incident_report_final_FINAL_v3.txt",
+      "------------------------------------------------------",
+      "DATE: 03-11 · LINE 4 · FAULT: pressure relief bypassed",
+      "RECOMMENDATION: halt production pending valve replacement",
+      "RESPONSE (VP OPS): 'halting costs 40k/day. reschedule.'",
+      "OUTCOME: [intentionally left blank]",
+      "distribution: deleted from all mailboxes except this archive",
+    ],
+  },
+  {
+    name: "shipping_manifests.tar",
+    make: (org) => [
+      "TAR — " + org + " / night-haul manifests (raw)",
+      "------------------------------------------------------",
+      "manifest 771 · 23:40 · 'cleaning supplies' · 4.2t · dock C",
+      "manifest 772 · 23:58 · 'cleaning supplies' · 4.1t · dock C",
+      "manifest 773 · 02:11 · 'cleaning supplies' · 4.4t · dock C",
+      "receiver signature on all three: same illegible scrawl",
+      "... (214 manifests, all 2-4 AM)",
+    ],
+  },
+  {
+    name: "patient_registry.db",
+    make: (org) => [
+      "SQLITE — " + org + " / clinical_trials registry",
+      "------------------------------------------------------",
+      "patient 0032 · group B · adverse event: 'mild' (revised from 'severe')",
+      "patient 0041 · group B · adverse event: 'mild' (revised from 'severe')",
+      "patient 0055 · group B · withdrawn · reason: 'relocated' (unverifiable)",
+      "memo: 'the B-group data publishes cleaner' — biostats",
+      "... (3,206 patients)",
+    ],
+  },
+];
+
+const HOST_ROLES_ENTRY = ["GATEWAY", "PORTAL", "EDGE", "FRONT-DOOR"];
+const HOST_ROLES_INTERNAL = ["CORE", "VAULT", "RELAY", "DEEP-NODE", "BACKBONE"];
+
+const PASSWORD_WORDS = [
+  "ghost", "onion", "vault", "pixel", "falcon", "harbor", "ember", "quartz",
+  "nimbus", "kestrel", "dagger", "sable", "moss", "tundra", "wraith", "cobalt",
+];
+
+const SSH_USERS = ["root", "admin", "sysop", "backup", "deploy", "operator"];
+
+const FLAVOR_PORTS = [
+  { port: 80, service: "http", banner: "nginx 1.24 — default page (untouched since install)" },
+  { port: 443, service: "https", banner: "nginx — TLS 1.3, self-signed cert, CN mismatch" },
+  { port: 21, service: "ftp", banner: "vsftpd 3.0.3 — anonymous disabled (allegedly)" },
+  { port: 3306, service: "mysql", banner: "MariaDB 10.6 — ops database, root remote enabled" },
+  { port: 6379, service: "redis", banner: "redis 7.0 — cache cluster, no auth" },
+];
+
+const DISABLE_NODE_POOL = [
+  {
+    id: "cam-grid", label: "surveillance camera grid",
+    result: [
+      "cam feeds 01-16 rolling static… then nothing.",
+      "the security office will blame a firmware update. there was no firmware update.",
+    ],
+  },
+  {
+    id: "alarm-relay", label: "alarm relay uplink",
+    result: [
+      "alarm heartbeat spoofed — monitoring station sees 'all quiet'.",
+      "average response time for a real event: 11 minutes. you have longer.",
+    ],
+  },
+  {
+    id: "smtp-relay", label: "outbound smtp relay",
+    result: [
+      "relay queue flushed — 4,000 alerts die unread.",
+      "nobody downstream will know what they missed.",
+    ],
+  },
+  {
+    id: "ups-telemetry", label: "UPS telemetry service",
+    result: [
+      "battery reports 100% while draining. a quiet lie.",
+      "if the power blinks, half the rack believes it's fine.",
+    ],
+  },
+];
+
+/* ---------- procedural story generator ---------- */
+
+function makeOrg() {
+  return pick(ORG_PREFIXES) + " " + pick(ORG_CORES);
+}
+
+function orgSlug(org) {
+  return org.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+function makeTitle() {
+  const roll = Math.random();
+  if (roll < 0.35) return pick(TITLE_ONEWORD);
+  if (roll < 0.7) return pick(TITLE_ADJS) + " " + pick(TITLE_NOUNS);
+  return "The " + pick(TITLE_NOUNS) + " " + pick(["Job", "Problem", "Exchange", "Drop", "Retrieval", "Question"]);
+}
+
+/** A fully local story — always available, works offline. */
+function proceduralStory(difficulty) {
+  const d = clampDifficulty(difficulty);
+  const org = makeOrg();
+  const slug = orgSlug(org);
+  const entryDomain = pick(["mail", "vpn", "portal", "edge", "gateway", "remote"]) + "." + slug + pick(ORG_TLDS);
+  const hostCount = hostCountFor(d);
+
+  const prize = pick(PRIZES);
+  const hosts = [];
+  for (let i = 0; i < hostCount; i++) {
+    const role = i === 0 ? pick(HOST_ROLES_ENTRY) : pick(HOST_ROLES_INTERNAL);
+    hosts.push({
+      name: slug.split("-")[0].toUpperCase() + "-" + role,
+      files: i === 0
+        ? [
+            {
+              name: "readme.txt",
+              content: [
+                "SYSTEM NOTICE — " + org.toUpperCase() + " IT department",
+                "unauthorized access is logged. logs are read 'eventually'.",
+                "maintainer contact: rotated quarterly, never updated.",
+                "if you are reading this, you are already inside.",
+              ],
+            },
+            { name: prize.name, content: prize.make(org) },
+          ]
+        : [
+            {
+              name: "readme.txt",
+              content: [
+                "INTERNAL SEGMENT — " + org.toUpperCase(),
+                "this node is not exposed to the internet. that was the whole plan.",
+                "trusted access only. trust is configured by someone who left in 2019.",
+              ],
+            },
+          ],
+    });
+  }
+
+  return {
+    title: makeTitle(),
+    client: pick(CLIENTS),
+    org,
+    entryDomain,
+    brief: [
+      pick(MOTIVES).replace(/\{org\}/g, org),
+      pick(ASKS),
+      pick(WARNINGS),
+    ],
+    outro: [
+      pick(CONSEQUENCES).replace(/\{org\}/g, org),
+      pick(CLIENT_MESSAGES),
+    ],
+    hosts,
+    prizeFile: prize.name,
+  };
+}
+
+/* ---------- story → mission (the mechanics wiring) ---------- */
+
+function uniqueFileName(host, wanted) {
+  let name = wanted;
+  let i = 2;
+  while (host.files.some((f) => f.name === name)) {
+    const dot = wanted.lastIndexOf(".");
+    name = dot > 0 ? wanted.slice(0, dot) + "_" + i + wanted.slice(dot) : wanted + "_" + i;
+    i++;
+  }
+  return name;
+}
+
+function pushFile(host, file) {
+  host.files.push({ ...file, name: uniqueFileName(host, file.name) });
+}
+
+/**
+ * Wire a story into a fully playable Mission.
+ * `seq` is the mission number (101+) — also used for ids.
+ */
+function storyToMission(story, difficulty, seq) {
+  const d = clampDifficulty(difficulty);
+  const tier = TIERS[d] || TIERS[1];
+  const id = "g" + seq;
+  const org = story.org || makeOrg();
+  const slug = orgSlug(org);
+  const entryDomain = story.entryDomain || "edge." + slug + ".com";
+  const hostCount = hostCountFor(d);
+
+  /* ---- hosts ---- */
+  const storyHosts = story.hosts.slice(0, hostCount);
+  while (storyHosts.length < hostCount) {
+    storyHosts.push({
+      name: slug.split("-")[0].toUpperCase() + "-" + (storyHosts.length === 0 ? pick(HOST_ROLES_ENTRY) : pick(HOST_ROLES_INTERNAL)),
+      files: [],
+    });
+  }
+
+  const hosts = storyHosts.map((sh, i) => {
+    const entryIp = i === 0 ? randPublicIp() : randInternalIp();
+    const sshUser = i === 0 ? pick(SSH_USERS) : pick(["admin", "sysop", "deploy", "operator"]);
+    const flavorPort = pick(FLAVOR_PORTS);
+    const host = {
+      ip: entryIp,
+      name: String(sh.name || "NODE").toUpperCase().slice(0, 28),
+      domain: i === 0 ? entryDomain : undefined,
+      sshUser,
+      password: pick(PASSWORD_WORDS) + randInt(10, 9999),
+      ports: [
+        { port: 22, service: "ssh", banner: "OpenSSH " + pick(["8.2p1", "9.2p1", "7.4"]) + " (auth: " + sshUser + ")" },
+        { port: flavorPort.port, service: flavorPort.service, banner: flavorPort.banner },
+      ],
+      files: sh.files
+        .filter((f) => f && typeof f.name === "string" && f.name.length > 0)
+        .map((f) => ({
+          name: f.name.toLowerCase().replace(/[^a-z0-9._-]/g, "_").slice(0, 40),
+          content: (f.content || []).filter((c) => typeof c === "string").slice(0, 8),
+        }))
+        .filter((f) => f.name.length > 1)
+        .map((f) => ({ ...f })),
+    };
+    if (i === 0 && d >= 2) host.firewall = true;
+    if (i >= 1) {
+      host.internal = true;
+      host.reachableFrom = ""; // patched below once all hosts exist
+    }
+    return host;
+  });
+
+  // internal hosts are reached through the previous hop (chain pivot)
+  hosts.forEach((h, i) => {
+    if (h.internal && !h.reachableFrom) {
+      h.reachableFrom = (hosts[i - 1] && hosts[i - 1].ip) || hosts[0].ip;
+    }
+  });
+
+  /* ---- locate the prize (always ends up on the last host) ---- */
+  let prizeName = (story.prizeFile || "").toLowerCase().replace(/[^a-z0-9._-]/g, "_");
+  let prizeContent = null;
+  if (prizeName) {
+    for (const h of hosts) {
+      const f = h.files.find((x) => x.name === prizeName);
+      if (f && f.content.length) prizeContent = f.content;
+    }
+    if (!prizeContent) prizeName = "";
+  }
+  if (!prizeName) {
+    const prize = pick(PRIZES);
+    prizeName = prize.name;
+    prizeContent = prize.make(org);
+  }
+  // strip story copies — the prize lives on the final host only
+  for (const h of hosts) h.files = h.files.filter((f) => f.name !== prizeName);
+  const prizeContentLines = (prizeContent || pick(PRIZES).make(org)).slice(0, 8);
+
+  const keyId = "k" + seq;
+
+  /* ---- mechanics files by difficulty ---- */
+
+  // D>=3: creds on host0 granting access to host1
+  if (d >= 3 && hosts.length >= 2) {
+    pushFile(hosts[0], {
+      name: "access_notes.txt",
+      content: [
+        "OPS NOTES — internal segment (do not remove)",
+        "pivot into " + hosts[1].name + " is allowed from this box only.",
+        "  node: " + hosts[1].ip + "  (auth: " + hosts[1].sshUser + ")",
+        "  emergency password on file: " + hosts[1].password,
+        "rotate quarterly. allegedly.",
+      ],
+      grantsCredsFor: hosts[1].ip,
+    });
+  }
+
+  // D5: handoff creds on host1 for host2
+  if (d === 5 && hosts.length === 3) {
+    pushFile(hosts[1], {
+      name: "handoff_notes.txt",
+      content: [
+        "HANDOFF — deep node access (burn after reading)",
+        hosts[2].name + " answers only from this segment.",
+        "  node: " + hosts[2].ip + "  (auth: " + hosts[2].sshUser + ")",
+        "  password: " + hosts[2].password,
+        "yes, in plaintext. the IT 'consultant' billed 40 hours for this.",
+      ],
+      grantsCredsFor: hosts[2].ip,
+    });
+  }
+
+  // D>=4: key file
+  const keyHostIdx = d === 5 ? 1 : 0;
+  if (d >= 4) {
+    pushFile(hosts[keyHostIdx], {
+      name: (slug.split("-")[0] || "vault") + ".key",
+      content: [
+        "-----BEGIN GHOST SHELL KEY-----",
+        "keyId: " + keyId,
+        "cipher: AES-256-CBC",
+        "note: 'lost key = lost data. no resets.' — mgmt",
+        "-----END GHOST SHELL KEY-----",
+      ],
+      grantsKey: keyId,
+    });
+  }
+
+  // D5: disable nodes — one on host1, one on host2
+  const nodeA = pick(DISABLE_NODE_POOL);
+  let nodeB = pick(DISABLE_NODE_POOL);
+  while (nodeB.id === nodeA.id) nodeB = pick(DISABLE_NODE_POOL);
+  if (d === 5 && hosts.length === 3) {
+    const nodesFor = [[1, nodeA], [2, nodeB]];
+    for (const pair of nodesFor) {
+      const hIdx = pair[0], node = pair[1];
+      hosts[hIdx].disableNodes = [
+        {
+          id: node.id,
+          label: node.label,
+          objectiveId: hIdx === 1 ? id + "-disable1" : id + "-disable2",
+          result: node.result,
+        },
+      ];
+    }
+  }
+
+  /* ---- the prize file ---- */
+  const prizeHost = hosts[hosts.length - 1];
+  const encrypted = d >= 4;
+  const finalPrizeName = encrypted ? prizeName + ".enc" : prizeName;
+  const prizeFile = {
+    name: finalPrizeName,
+    content: [
+      encrypted ? "AES-256-CBC encrypted archive — keyId: " + keyId : prizeName + " — " + org,
+      "------------------------------------------------------",
+      ...prizeContentLines,
+    ],
+  };
+  if (encrypted) {
+    prizeFile.keyId = keyId;
+    prizeFile.decryptedPreview = prizeContentLines;
+  }
+
+  /* ---- objectives ---- */
+  const objectives = [];
+  const obj = (oid, label) => objectives.push({ id: id + "-" + oid, label });
+
+  if (d === 1) {
+    prizeFile.objectiveOnExfil = id + "-exfil";
+    hosts[0].objectiveOnShell = id + "-shell";
+    obj("shell", "Open a shell on " + hosts[0].name);
+    obj("exfil", "Exfiltrate " + finalPrizeName);
+  } else if (d === 2) {
+    prizeFile.objectiveOnExfil = id + "-exfil";
+    hosts[0].objectiveOnShell = id + "-shell";
+    hosts[0].objectiveOnScan = id + "-scan";
+    obj("scan", "Map the perimeter (" + hosts[0].name + ")");
+    obj("shell", "Open a shell on " + hosts[0].name);
+    obj("exfil", "Exfiltrate " + finalPrizeName);
+  } else if (d === 3) {
+    prizeFile.objectiveOnExfil = id + "-exfil";
+    hosts[0].objectiveOnShell = id + "-shell";
+    hosts[1].objectiveOnShell = id + "-pivot";
+    obj("shell", "Open a shell on " + hosts[0].name);
+    obj("pivot", "Pivot into " + hosts[1].name + " (internal)");
+    obj("exfil", "Exfiltrate " + finalPrizeName + " from " + hosts[1].name);
+  } else if (d === 4) {
+    prizeFile.objectiveOnDecrypt = id + "-decrypt";
+    hosts[0].objectiveOnShell = id + "-shell";
+    hosts[0].objectiveOnScan = id + "-scan";
+    hosts[1].objectiveOnShell = id + "-pivot";
+    obj("scan", "Map the perimeter (" + hosts[0].name + ")");
+    obj("shell", "Open a shell on " + hosts[0].name);
+    obj("pivot", "Pivot into " + hosts[1].name + " (internal)");
+    obj("decrypt", "Decrypt " + finalPrizeName);
+  } else {
+    prizeFile.objectiveOnDecrypt = id + "-decrypt";
+    hosts[0].objectiveOnShell = id + "-shell";
+    hosts[1].objectiveOnShell = id + "-pivot";
+    hosts[2].objectiveOnShell = id + "-breach";
+    obj("shell", "Open a shell on " + hosts[0].name);
+    obj("pivot", "Pivot into " + hosts[1].name + " (internal)");
+    obj("breach", "Breach " + hosts[2].name + " (deep node)");
+    obj("disable1", "Take down the " + nodeA.label + " (disable " + nodeA.id + ")");
+    obj("disable2", "Kill the " + nodeB.label + " (disable " + nodeB.id + ")");
+    obj("decrypt", "Decrypt " + finalPrizeName);
+  }
+  pushFile(prizeHost, prizeFile);
+
+  /* ---- hints (ordered walkthrough of the mechanics) ---- */
+  const hints = [
+    "resolve the target first: nslookup " + entryDomain,
+  ];
+  if (d >= 2) hints.push("the edge is firewalled — 'proxy on' before you scan " + hosts[0].ip);
+  hints.push("map the open services: nmap " + hosts[0].ip);
+  hints.push("brute-force the ssh login: hydra " + hosts[0].ip);
+  hints.push("log in with what hydra found: ssh " + hosts[0].sshUser + "@" + hosts[0].ip);
+  hints.push("look around on the shell: ls, then cat what looks interesting");
+  if (d >= 3) hints.push("the ops notes hold internal creds — cat access_notes.txt, then nmap the internal node");
+  if (d >= 4) hints.push("find the key file — cat " + ((hosts[keyHostIdx].files.find((f) => f.grantsKey) || {}).name || "the .key file"));
+  if (d === 5) hints.push("deep node creds are on " + hosts[1].name + " — cat handoff_notes.txt");
+  if (d === 5) hints.push("kill the camera grid first: disable " + nodeA.id);
+  if (d === 5) hints.push("and the " + nodeB.label + " on the deep node: disable " + nodeB.id);
+  hints.push(encrypted ? "the prize is sealed: decrypt " + finalPrizeName : "take the prize: exfil " + finalPrizeName);
+
+  /* ---- flavor: bare hosts get a readme ---- */
+  for (const h of hosts) {
+    if (h.files.length === 0) {
+      pushFile(h, {
+        name: "readme.txt",
+        content: [
+          h.name + " — " + org,
+          "nothing classified here. just a box doing its job.",
+        ],
+      });
+    }
+  }
+
+  const payout = randInt(tier.payout[0], tier.payout[1]);
+  const xp = randInt(tier.xp[0], tier.xp[1]);
+
+  const outro = [
+    "[hub] bounty #" + seq + " closed — client satisfied",
+    ...story.outro,
+    "₡" + payout + " transferred. the hub takes its quiet cut.",
+  ];
+
+  return {
+    id,
+    num: seq,
+    title: story.title || makeTitle(),
+    client: story.client || "an anonymous client",
+    difficulty: d,
+    payout,
+    xp,
+    minLevel: tier.minLevel,
+    brief: story.brief.length ? story.brief : [org + " has a problem. solve it."],
+    outro,
+    entryDomain,
+    hosts,
+    objectives,
+    hints,
+    traceScale: traceScaleFor(d),
+    generated: true,
+  };
+}
+
+/* ---------- persisted-mission validation (parseSave defense) ---------- */
+
+/**
+ * A generated mission must be complete & completable:
+ * every objective has a trigger; every trigger points at a real objective.
+ */
+function isMissionValid(m) {
+  if (!m || typeof m !== "object" || Array.isArray(m)) return false;
+  const v = m;
+  if (typeof v.id !== "string" || !v.id.startsWith("g")) return false;
+  if (typeof v.num !== "number" || v.num < 101) return false;
+  if (typeof v.title !== "string" || !v.title) return false;
+  if (typeof v.entryDomain !== "string" || !v.entryDomain) return false;
+  if (!Array.isArray(v.hosts) || v.hosts.length === 0) return false;
+  if (!Array.isArray(v.objectives) || v.objectives.length === 0) return false;
+  if (!Array.isArray(v.hints)) return false;
+
+  const objIds = new Set();
+  for (const o of v.objectives) {
+    if (!o || typeof o !== "object") return false;
+    if (typeof o.id !== "string" || !o.id) return false;
+    objIds.add(o.id);
+  }
+
+  const triggered = new Set();
+  const touch = (t) => {
+    if (typeof t === "string") triggered.add(t);
+  };
+
+  for (const hRaw of v.hosts) {
+    if (!hRaw || typeof hRaw !== "object") return false;
+    const h = hRaw;
+    if (typeof h.ip !== "string" || typeof h.password !== "string" || !h.password) return false;
+    if (typeof h.sshUser !== "string" || !h.sshUser) return false;
+    if (h.password.includes(" ")) return false;
+    if (!Array.isArray(h.ports) || h.ports.length === 0) return false;
+    if (!Array.isArray(h.files)) return false;
+    touch(h.objectiveOnShell);
+    touch(h.objectiveOnScan);
+    touch(h.objectiveOnCrack);
+    for (const nRaw of h.disableNodes || []) {
+      if (!nRaw || typeof nRaw !== "object") return false;
+      touch(nRaw.objectiveId);
+    }
+    for (const fRaw of h.files) {
+      if (!fRaw || typeof fRaw !== "object") return false;
+      if (typeof fRaw.name !== "string" || !fRaw.name) return false;
+      if (!Array.isArray(fRaw.content)) return false;
+      touch(fRaw.objectiveOnExfil);
+      touch(fRaw.objectiveOnDecrypt);
+      touch(fRaw.objectiveOnRead);
+    }
+  }
+
+  for (const oid of objIds) if (!triggered.has(oid)) return false;
+  for (const t of triggered) if (!objIds.has(t)) return false;
+
+  const resolves = v.hosts.some((h) => h.domain === v.entryDomain);
+  if (!resolves) return false;
+
+  return true;
+}
+/* ================================================================== */
+/* Part 5: GHOST SHELL terminal app — commands, board, panel, state    */
+/* (ported from the hosted build's Terminal/index.tsx)                 */
+/* ================================================================== */
+
+/* ---------- terminal line model ---------- */
+
+const TONE_CLASS = {
+  out: "tone-out", cmd: "tone-cmd", accent: "tone-accent", muted: "tone-muted",
+  warn: "tone-warn", danger: "tone-danger", ok: "tone-ok", head: "tone-head",
+};
+
+let lineSeq = 1;
+let LINES = [];
+
+function appendLine(text, tone) {
+  const p = document.createElement("p");
+  p.className = TONE_CLASS[tone] || "tone-out";
+  p.textContent = text === " " ? "\u00a0" : text;
+  $("term-lines").appendChild(p);
+  LINES.push({ id: lineSeq++, text, tone });
+  const box = $("term-lines");
+  box.scrollTop = box.scrollHeight;
+}
+
+function clearLines() {
+  LINES = [];
+  $("term-lines").innerHTML = "";
+}
+
+/* ---------- state ---------- */
+
+const SAVE_KEY = "nebula.ghostshell.v1";
+let SAVE = freshSave();
+let busy = false;
+let boardOpen = false;
+let genBusy = false;
+let history = [];
+let histIdx = -1;
+
+/* debug handle for QA tooling (harmless in production) */
+window.__gs = {
+  getSave: () => SAVE,
+  getSettings: () => SETTINGS,
+};
+
+function persist() {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(SAVE)); } catch (e) { /* storage blocked — keep playing */ }
+}
+
+function commit(mutator) {
+  SAVE = mutator(SAVE);
+  persist();
+  renderAll();
+}
+
+/* ---------- combined mission lookup ---------- */
+
+function genListOf(s) { return s.gen || []; }
+
+function findMissionById(s, id) {
+  return MISSIONS.find((m) => m.id === id) || genListOf(s).find((m) => m.id === id);
+}
+
+function findMissionByNum(s, n) {
+  return MISSIONS.concat(genListOf(s)).find((m) => m.num === n);
+}
+
+function activeMissionOf(s) {
+  if (!s.active) return null;
+  const mission = findMissionById(s, s.active.missionId);
+  if (!mission) return null;
+  return { mission, rt: s.active };
+}
+
+/* ---------- printing / streaming ---------- */
+
+function print(text, tone) {
+  appendLine(text, tone || "out");
+}
+
+async function run(chunks) {
+  busy = true;
+  $("term-input").disabled = true;
+  $("term-caret").style.display = "none";
+  showBusy(true);
+  try {
+    for (const ch of chunks) {
+      if (ch.d) await sleep(ch.d);
+      print(ch.text, ch.tone);
+    }
+    return true;
+  } finally {
+    busy = false;
+    $("term-input").disabled = false;
+    $("term-caret").style.display = "";
+    showBusy(false);
+    $("term-input").focus({ preventScroll: true });
+  }
+}
+
+let busyRow = null;
+function showBusy(on) {
+  if (on) {
+    if (busyRow) return;
+    busyRow = document.createElement("p");
+    busyRow.className = "busy-row";
+    busyRow.innerHTML = '<span class="caret" style="animation:none"></span><span>processing…</span>';
+    $("term-lines").appendChild(busyRow);
+    $("term-lines").scrollTop = $("term-lines").scrollHeight;
+  } else if (busyRow) {
+    busyRow.remove();
+    busyRow = null;
+  }
+}
+
+/* ---------- darknet bounty generation (endless missions, offline) ---------- */
+
+const GEN_POOL_TARGET = 4;
+
+/** offline build: every story comes from the local procedural generator */
+async function ensureGenPool() {
+  if (genBusy) return;
+  if ((SAVE.gen || []).length >= GEN_POOL_TARGET) return;
+  genBusy = true;
+  renderToolbar();
+  let minted = 0;
+  try {
+    while ((SAVE.gen || []).length < GEN_POOL_TARGET) {
+      const difficulty = rollDifficulty(SAVE.level);
+      const story = proceduralStory(difficulty);
+      const seq = Math.max(101, SAVE.genSeq);
+      const mission = storyToMission(story, difficulty, seq);
+      commit((sv) => ({
+        ...sv,
+        gen: (sv.gen || []).concat([mission]),
+        genSeq: Math.max(sv.genSeq, seq + 1),
+      }));
+      minted++;
+      await sleep(120);
+    }
+  } finally {
+    genBusy = false;
+    renderToolbar();
+    if (boardOpen) renderBoard();
+  }
+  if (minted > 0) {
+    print("[darknet] " + minted + " new bount" + (minted === 1 ? "y" : "ies") + " minted — 'missions' to browse", "accent");
+  }
+}
+
+/* ---------- progression ---------- */
+
+function printLevelUp(from, to) {
+  print(" ", "out");
+  print("▲ LEVEL UP — level " + to + " unlocked", "ok");
+  print("  new rank: " + xpProgress(SAVE.xp).rank, "accent");
+}
+
+function completeObjective(objId) {
+  const s = SAVE;
+  const act = activeMissionOf(s);
+  if (!act || act.rt.objectivesDone.includes(objId)) return;
+  const obj = act.mission.objectives.find((o) => o.id === objId);
+  if (!obj) return; // unknown objective id must not pollute completion math
+  const xp = s.xp + OBJECTIVE_XP;
+  const oldLevel = s.level;
+  commit((sv) => ({
+    ...sv,
+    xp,
+    level: levelFor(xp),
+    active: { ...act.rt, objectivesDone: act.rt.objectivesDone.concat([objId]) },
+  }));
+  print("» objective complete: " + obj.label, "ok");
+  playSound("notify");
+  if (levelFor(xp) > oldLevel) printLevelUp(oldLevel, levelFor(xp));
+}
+
+async function finishMissionSequence() {
+  const s = SAVE;
+  const act = activeMissionOf(s);
+  if (!act) return;
+  const mission = act.mission;
+  const isFinal = mission.id === FINAL_MISSION_ID;
+
+  const finaleChunks = [
+    { text: " ", d: 250 },
+    { text: "══════════════════════════════════════", tone: "accent", d: 200 },
+    { text: "CONTRACT COMPLETE — #" + String(mission.num).padStart(2, "0"), tone: "head", d: 150 },
+    ...mission.outro.map((l, i) => ({ text: l, tone: i === 0 ? "accent" : "out", d: 320 })),
+    { text: "+₡" + mission.payout + " · +" + mission.xp + "xp", tone: "ok", d: 300 },
+  ];
+  if (isFinal) {
+    finaleChunks.push(
+      ...(mission.epilogue || []).map((l) => ({ text: l, tone: "out", d: 420 })),
+      { text: "+" + FINAL_BONUS_XP + "xp — GHOST PROTOCOL BONUS", tone: "ok", d: 300 }
+    );
+  }
+  await run(finaleChunks);
+
+  const before = SAVE;
+  const oldLevel = before.level;
+  const baseXp = before.xp + mission.xp + (isFinal ? FINAL_BONUS_XP : 0);
+  commit((sv) => ({
+    ...sv,
+    xp: baseXp,
+    level: levelFor(baseXp),
+    credits: sv.credits + mission.payout,
+    completed: sv.completed.concat([mission.id]),
+    gen: (sv.gen || []).filter((m) => m.id !== mission.id),
+    active: null,
+  }));
+  if (levelFor(baseXp) > oldLevel) printLevelUp(oldLevel, levelFor(baseXp));
+  playSound("notify");
+  notify("Terminal", "Contract complete — +₡" + mission.payout + ", +" + mission.xp + " XP", "success");
+  if (isFinal) {
+    print(" ", "out");
+    print("GHOST PROTOCOL COMPLETE — you are the ultimate hacker.", "head");
+    print("the darknet keeps minting bounties. the work never stops.", "muted");
+  } else {
+    print("type 'missions' for the next contract.", "muted");
+  }
+  // replenish the endless bounty pool in the background
+  void ensureGenPool();
+}
+
+async function failSequence() {
+  const s = SAVE;
+  const act = activeMissionOf(s);
+  await run([
+    { text: " ", d: 120 },
+    { text: "!! TRACE COMPLETE — CONNECTION SEVERED !!", tone: "danger", d: 200 },
+    { text: "the bluebirds burned your tunnel. session shredded.", tone: "danger", d: 300 },
+    { text: "contract reset — no payout, no penalty. try again.", tone: "muted", d: 300 },
+  ]);
+  playSound("error");
+  notify("Terminal", "Mission failed — trace complete", "danger");
+  commit((sv) => ({ ...sv, active: null }));
+  if (act) print("restart with: start " + act.mission.num, "muted");
+}
+
+/** returns true if the mission just FAILED (trace hit 100) */
+function addTrace(base) {
+  const s = SAVE;
+  const act = activeMissionOf(s);
+  if (!act) return false;
+  // generated bounties scale trace with difficulty
+  const scaled = Math.round(base * (act.mission.traceScale || 1));
+  const gain = traceGain(scaled, act.rt.proxyOn);
+  const trace = Math.min(100, act.rt.trace + gain);
+  commit((sv) => (sv.active ? { ...sv, active: { ...sv.active, trace } } : sv));
+  if (gain > 0) {
+    print("[trace +" + gain + "% → " + trace + "%]", trace >= 75 ? "danger" : "warn");
+  }
+  return trace >= 100;
+}
+
+/* ---------- commands ---------- */
+
+function diffDots(d) {
+  return "●".repeat(d) + "○".repeat(5 - d);
+}
+
+const HELP = [
+  { text: "CONTRACTS", tone: "head" },
+  { text: "  missions              browse contracts (opens the board)" },
+  { text: "  start <n>             accept contract #n (story 1-8 · darknet 101+)" },
+  { text: "  abort                 abandon active contract" },
+  { text: "  status                objectives · trace · hosts" },
+  { text: "  hint                  darknet hint for the active contract (+3% trace)" },
+  { text: "  reroll                redraw unclaimed darknet bounties" },
+  { text: " ", tone: "muted" },
+  { text: "RECON", tone: "head" },
+  { text: "  nslookup <domain>     resolve a target to an IP" },
+  { text: "  nmap <ip>             port-scan a host (+8% trace)" },
+  { text: "  hydra <ip>            brute-force the password (+15% trace)" },
+  { text: "  ssh <user>@<ip>       open a shell (needs the cracked password)" },
+  { text: " ", tone: "muted" },
+  { text: "ON A SHELL", tone: "head" },
+  { text: "  ls                    list files on the current host" },
+  { text: "  cat <file>            read a file (keys, creds, story)" },
+  { text: "  exfil <file>          steal a file (+20% trace)" },
+  { text: "  decrypt <file>        decrypt a .enc file (needs its key, +5%)" },
+  { text: "  disable <node>        sabotage a service node (+25% trace)" },
+  { text: "  exit                  log out of the host" },
+  { text: " ", tone: "muted" },
+  { text: "SYSTEM", tone: "head" },
+  { text: "  proxy on|off          relay chain — halves trace gains (level 2)" },
+  { text: "  wallpaper [id|list]   switch the desktop wallpaper" },
+  { text: "  crt on|off            CRT scanline overlay" },
+  { text: "  sound on|off          system sounds" },
+  { text: "  reset [confirm]       wipe save data and start over" },
+  { text: "  whoami · clear · help" },
+  { text: " ", tone: "muted" },
+  { text: "offline build: missions generate locally from procedural", tone: "muted" },
+  { text: "pools — no network needed. there is always another contract.", tone: "muted" },
+];
+
+async function exec(raw) {
+  const trimmed = raw.trim();
+  if (!trimmed) return;
+  print("operator@ghost:~$ " + trimmed, "cmd");
+  history.push(trimmed);
+  histIdx = -1;
+
+  const parts = trimmed.split(/\s+/);
+  const cmd = parts[0].toLowerCase();
+  const arg = parts.slice(1).join(" ");
+  const s = SAVE;
+  const act = activeMissionOf(s);
+
+  /* ---------- meta commands ---------- */
+
+  if (cmd === "clear") {
+    clearLines();
+    return;
+  }
+
+  if (cmd === "help") {
+    await run(HELP);
+    return;
+  }
+
+  if (cmd === "whoami") {
+    const p = xpProgress(s.xp);
+    const storyClosed = s.completed.filter((c) => !c.startsWith("g")).length;
+    const bountyClosed = s.completed.length - storyClosed;
+    await run([
+      { text: "operator   root@ghost", tone: "accent" },
+      { text: "rank       " + p.rank + " (level " + p.level + ")" },
+      { text: "progress   " + s.xp + "xp · " + p.into + "/" + p.span + " to level " + (p.level + 1) },
+      { text: "credits    ₡" + s.credits },
+      { text: "contracts  " + storyClosed + "/" + MISSIONS.length + " story · " + bountyClosed + " darknet bounties · ∞ available" },
+    ]);
+    return;
+  }
+
+  if (cmd === "wallpaper") {
+    const sub = arg.toLowerCase().trim();
+    if (!sub || sub === "list") {
+      await run([
+        { text: "WALLPAPERS", tone: "head" },
+        ...WALLPAPERS.map((w) => ({
+          text: (w.id === SETTINGS.wallpaper ? "▸ " : "  ") + w.id.padEnd(16) + w.label + (w.live ? "  (live)" : ""),
+          tone: w.id === SETTINGS.wallpaper ? "accent" : "out",
+        })),
+        { text: "wallpaper <id> to switch", tone: "muted" },
+      ]);
+      return;
+    }
+    const w = WALLPAPERS.find((x) => x.id === sub);
+    if (!w) {
+      print("wallpaper: unknown id '" + sub + "' — 'wallpaper list'", "warn");
+      return;
+    }
+    SETTINGS.wallpaper = w.id;
+    saveSettings();
+    applyWallpaper();
+    print("[desktop] wallpaper → " + w.label, "ok");
+    return;
+  }
+
+  if (cmd === "crt") {
+    const want = arg.toLowerCase().trim();
+    if (want !== "on" && want !== "off") {
+      print("crt: scanline overlay is " + (SETTINGS.crt ? "ON" : "OFF") + " — 'crt on | crt off'", "muted");
+      return;
+    }
+    SETTINGS.crt = want === "on";
+    saveSettings();
+    applyCrt();
+    print(want === "on" ? "[display] CRT overlay engaged — scanlines + vignette" : "[display] CRT overlay disengaged", want === "on" ? "ok" : "muted");
+    return;
+  }
+
+  if (cmd === "sound") {
+    const want = arg.toLowerCase().trim();
+    if (want !== "on" && want !== "off") {
+      print("sound: system sounds are " + (SETTINGS.sound ? "ON" : "OFF") + " — 'sound on | sound off'", "muted");
+      return;
+    }
+    SETTINGS.sound = want === "on";
+    saveSettings();
+    updateSoundTray();
+    if (want === "on") playSound("notify");
+    print("[system] sounds " + (want === "on" ? "enabled" : "muted"), want === "on" ? "ok" : "muted");
+    return;
+  }
+
+  if (cmd === "reset") {
+    if (arg.toLowerCase() !== "confirm") {
+      print("reset: this wipes your operator, credits, contracts and bounties.", "warn");
+      print("type 'reset confirm' if you mean it.", "muted");
+      return;
+    }
+    print("[vault] shredding save data · burning bounties · forgetting you…", "accent");
+    await sleep(700);
+    try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* ignore */ }
+    print("[vault] done. rebooting the shell…", "ok");
+    await sleep(600);
+    location.reload();
+    return;
+  }
+
+  if (cmd === "reroll") {
+    const cur = SAVE;
+    const pool = genListOf(cur);
+    const activeId = cur.active ? cur.active.missionId : null;
+    const drop = pool.filter((m) => m.id !== activeId);
+    if (drop.length === 0) {
+      print("no unclaimed bounties to reroll", "muted");
+      return;
+    }
+    commit((sv) => ({ ...sv, gen: genListOf(sv).filter((m) => m.id === activeId) }));
+    print("[darknet] discarded " + drop.length + " unclaimed bount" + (drop.length === 1 ? "y" : "ies") + " — minting fresh contracts…", "accent");
+    void ensureGenPool();
+    return;
+  }
+
+  if (cmd === "missions") {
+    openBoard();
+    void ensureGenPool();
+    const gen = genListOf(s);
+    const rows = [{ text: "#   title                 diff  payout   status", tone: "muted" }];
+    for (const m of MISSIONS) {
+      const done = s.completed.includes(m.id);
+      const locked = s.level < m.minLevel;
+      rows.push({
+        text: String(m.num).padStart(2, "0") + "  " + m.title.padEnd(22) + diffDots(m.difficulty) + "  ₡" + String(m.payout).padEnd(7) + " " +
+          (done ? "COMPLETED" : locked ? "LOCKED (Lv" + m.minLevel + ")" : "AVAILABLE"),
+        tone: done ? "ok" : locked ? "muted" : "accent",
+      });
+    }
+    if (gen.length > 0 || genBusy) {
+      rows.push({ text: "── darknet bounties (generated · endless) ──", tone: "muted" });
+      for (const m of gen) {
+        const isActive = s.active && s.active.missionId === m.id;
+        rows.push({
+          text: String(m.num).padEnd(3) + " " + m.title.padEnd(22) + diffDots(m.difficulty) + "  ₡" + String(m.payout).padEnd(7) + " " +
+            (isActive ? "ACTIVE   " : "AVAILABLE"),
+          tone: isActive ? "warn" : "accent",
+        });
+      }
+      if (genBusy) rows.push({ text: "··· minting fresh contracts ···", tone: "muted" });
+    }
+    rows.push({ text: "start <n> to accept · 'reroll' redraws unclaimed bounties", tone: "muted" });
+    await run(rows);
+    return;
+  }
+
+  if (cmd === "start") {
+    const gMatch = /^g(\d+)$/i.exec(arg.trim());
+    let mission;
+    if (gMatch) {
+      mission = findMissionById(s, "g" + gMatch[1]);
+    } else {
+      const n = parseInt(arg, 10);
+      mission = isNaN(n) ? undefined : findMissionByNum(s, n);
+    }
+    if (!mission) {
+      print("start: usage — start <n> ('missions' lists the numbers)", "warn");
+      return;
+    }
+    if (act) {
+      print("contract #" + String(act.mission.num).padStart(2, "0") + " already active — 'abort' first", "warn");
+      return;
+    }
+    if (s.completed.includes(mission.id)) {
+      print("contract already closed — pick another one", "warn");
+      return;
+    }
+    if (s.level < mission.minLevel) {
+      print("locked — requires level " + mission.minLevel + " (" + xpProgress(s.xp).rank + " needed)", "warn");
+      return;
+    }
+    commit((sv) => ({ ...sv, active: freshRuntime(mission.id) }));
+    await run([
+      { text: " ", d: 80 },
+      { text: "[contract accepted] #" + String(mission.num).padStart(2, "0") + " — \"" + mission.title + "\"", tone: "head", d: 200 },
+      ...(mission.generated
+        ? [{ text: "source: darknet bounty · difficulty " + mission.difficulty + "/5 · trace ×" + (mission.traceScale || 1).toFixed(2), tone: "muted", d: 160 }]
+        : []),
+      { text: "client: " + mission.client, tone: "accent", d: 180 },
+      ...mission.brief.map((b) => ({ text: b, d: 340 })),
+      { text: " ", d: 150 },
+      { text: "target: " + mission.entryDomain, tone: "ok", d: 200 },
+      { text: "objectives (" + mission.objectives.length + "):", tone: "muted", d: 120 },
+      ...mission.objectives.map((o) => ({ text: "  [ ] " + o.label, d: 100 })),
+      { text: "get started: nslookup " + mission.entryDomain, tone: "accent", d: 200 },
+    ]);
+    playSound("open");
+    return;
+  }
+
+  if (cmd === "abort") {
+    if (!act) {
+      print("no active contract to abort", "warn");
+      return;
+    }
+    commit((sv) => ({ ...sv, active: null }));
+    print("contract #" + String(act.mission.num).padStart(2, "0") + " abandoned — no penalty", "warn");
+    return;
+  }
+
+  if (cmd === "hint") {
+    if (!act) {
+      print("no active contract — hints need context", "warn");
+      return;
+    }
+    const hint = act.mission.hints[act.rt.hintIndex];
+    if (!hint) {
+      print("darknet has nothing more for you on this one", "muted");
+      return;
+    }
+    commit((sv) => (sv.active ? { ...sv, active: { ...sv.active, hintIndex: sv.active.hintIndex + 1 } } : sv));
+    print("[darknet] " + hint, "accent");
+    addTrace(3);
+    return;
+  }
+
+  if (cmd === "proxy") {
+    const want = arg.toLowerCase();
+    if (want !== "on" && want !== "off") {
+      print("proxy: usage — proxy on | proxy off", "warn");
+      return;
+    }
+    if (s.level < 2) {
+      print("[proxy] relay chain unavailable — requires level 2 (Packet Pusher)", "warn");
+      return;
+    }
+    if (!act) {
+      print("no active session — proxy matters mid-contract", "muted");
+    }
+    commit((sv) => (sv.active ? { ...sv, active: { ...sv.active, proxyOn: want === "on" } } : sv));
+    print(
+      want === "on"
+        ? "[proxy] chaining through 3 relays — trace gains halved"
+        : "[proxy] direct connection — trace gains normal",
+      want === "on" ? "ok" : "muted"
+    );
+    return;
+  }
+
+  if (cmd === "status") {
+    if (!act) {
+      print("no active contract — 'missions' to browse", "muted");
+      return;
+    }
+    const mission = act.mission, rt = act.rt;
+    const info = traceInfo(rt.trace);
+    await run([
+      { text: "active contract: #" + String(mission.num).padStart(2, "0") + " \"" + mission.title + "\"", tone: "accent" },
+      ...mission.objectives.map((o) => ({
+        text: "  [" + (rt.objectivesDone.includes(o.id) ? "✓" : " ") + "] " + o.label,
+        tone: rt.objectivesDone.includes(o.id) ? "ok" : "out",
+      })),
+      { text: "trace: " + rt.trace + "% (" + info.word + ") · proxy: " + (rt.proxyOn ? "ON" : "OFF"), tone: rt.trace >= 75 ? "danger" : "out" },
+      { text: "hosts: " + rt.discovered.length + " discovered · " + rt.scanned.length + " scanned · shell: " + (rt.shellHost || "none"), d: 80 },
+      { text: "payout on completion: ₡" + mission.payout + " + " + mission.xp + "xp", tone: "muted", d: 80 },
+    ]);
+    return;
+  }
+
+  /* ---------- commands requiring an active mission ---------- */
+
+  if (!act) {
+    if (["nslookup", "nmap", "hydra", "ssh", "ls", "cat", "exfil", "decrypt", "disable", "exit"].includes(cmd)) {
+      print("no active contract — 'missions' to browse, 'start <n>' to accept", "warn");
+      return;
+    }
+    print("command not found: " + cmd + " — try 'help'", "warn");
+    return;
+  }
+
+  const mission = act.mission, rt = act.rt;
+
+  if (cmd === "nslookup") {
+    const domain = arg.toLowerCase().replace(/\.$/, "");
+    if (!domain) {
+      print("nslookup: usage — nslookup <domain>", "warn");
+      return;
+    }
+    const host = mission.hosts.find((h) => (h.domain || "").toLowerCase() === domain);
+    if (!host) {
+      await run([
+        { text: "Server:   ghost-resolver.darknet", d: 120 },
+        { text: "** server can't find " + domain + ": NXDOMAIN", tone: "danger", d: 200 },
+        { text: "(the domain must belong to the active contract's network)", tone: "muted", d: 100 },
+      ]);
+      return;
+    }
+    const newlyFound = !rt.discovered.includes(host.ip);
+    if (newlyFound) commit((sv) => (sv.active ? { ...sv, active: { ...sv.active, discovered: sv.active.discovered.concat([host.ip]) } } : sv));
+    await run([
+      { text: "Server:   ghost-resolver.darknet", d: 150 },
+      { text: "Address:  " + host.ip, tone: "accent", d: 250 },
+      { text: "Name:     " + host.name, d: 120 },
+    ]);
+    return;
+  }
+
+  if (cmd === "nmap") {
+    const ip = arg;
+    if (!ip) {
+      print("nmap: usage — nmap <ip>", "warn");
+      return;
+    }
+    const host = hostByIp(mission, ip);
+    if (!host) {
+      print("nmap: host " + ip + " is not part of this contract's network", "warn");
+      return;
+    }
+    if (host.internal && rt.shellHost !== host.reachableFrom) {
+      print("nmap: " + ip + " unreachable — internal segment. hop through " + host.reachableFrom + " first", "danger");
+      return;
+    }
+    if (host.firewall && !rt.proxyOn) {
+      await run([
+        { text: "Starting Nmap 7.94 against " + ip + " ...", d: 200 },
+        { text: " !! scan blocked — firewall dropping probes", tone: "danger", d: 350 },
+        { text: " !! direct scans from your exit node are getting flagged", tone: "warn", d: 200 },
+        { text: "hint: 'proxy on' routes you through the relay chain", tone: "muted", d: 150 },
+      ]);
+      addTrace(2);
+      return;
+    }
+    const already = rt.scanned.includes(ip);
+    if (!already) commit((sv) => (sv.active ? { ...sv, active: { ...sv.active, scanned: sv.active.scanned.concat([ip]), discovered: sv.active.discovered.includes(ip) ? sv.active.discovered : sv.active.discovered.concat([ip]) } } : sv));
+    await run([
+      { text: "Starting Nmap 7.94 ( ghost-build ) against " + ip, d: 180 },
+      { text: "PORT      STATE  SERVICE", tone: "muted", d: 320 },
+      ...host.ports.map((p) => ({
+        text: String(p.port).padEnd(9) + " open   " + p.service.padEnd(8) + " " + p.banner,
+        d: 140,
+      })),
+      { text: "Nmap done: 1 host up · " + host.ports.length + " open ports", tone: "ok", d: 260 },
+    ]);
+    if (!already) {
+      if (host.objectiveOnScan) completeObjective(host.objectiveOnScan);
+      if (addTrace(8)) await failSequence();
+    } else {
+      print("(already scanned — no new intel, no new trace)", "muted");
+    }
+    return;
+  }
+
+  if (cmd === "hydra") {
+    const ip = arg.split(/\s+/)[0] || "";
+    if (!ip) {
+      print("hydra: usage — hydra <ip>", "warn");
+      return;
+    }
+    const host = hostByIp(mission, ip);
+    if (!host) {
+      print("hydra: host " + ip + " is not part of this contract's network", "warn");
+      return;
+    }
+    if (!rt.scanned.includes(ip)) {
+      print("hydra: no open ports known on " + ip + " — run nmap first", "warn");
+      return;
+    }
+    if (rt.cracked[ip]) {
+      print("hydra: " + ip + " already cracked — password: " + rt.cracked[ip], "muted");
+      return;
+    }
+    const user = host.sshUser;
+    await run([
+      { text: "Hydra v9.5 attacking ssh://" + ip + ":22 …", d: 200 },
+      { text: "[DATA] 4 tasks · 1,431,072 passwords in wordlist darkweb.lst", tone: "muted", d: 400 },
+      { text: "[ATTEMPT] target " + ip + " — login \"" + user + "\" — pass \"admin\"", d: 260 },
+      { text: "[ATTEMPT] target " + ip + " — login \"" + user + "\" — pass \"123456\"", d: 300 },
+      { text: "[ATTEMPT] target " + ip + " — login \"" + user + "\" — pass \"password1\"", d: 340 },
+      { text: "[22][ssh] host: " + ip + "   login: " + user + "   password: " + host.password, tone: "ok", d: 500 },
+      { text: "1 of 1 targets successfully completed.", tone: "muted", d: 200 },
+    ]);
+    commit((sv) => (sv.active ? { ...sv, active: { ...sv.active, cracked: { ...sv.active.cracked, [ip]: host.password } } } : sv));
+    if (host.objectiveOnCrack) completeObjective(host.objectiveOnCrack);
+    if (addTrace(15)) await failSequence();
+    return;
+  }
+
+  if (cmd === "ssh") {
+    const target = arg;
+    const m = /^(\S+)@(\S+)$/.exec(target);
+    if (!m) {
+      print("ssh: usage — ssh <user>@<ip>   (check nmap banners for the user)", "warn");
+      return;
+    }
+    const user = m[1], ip = m[2];
+    const host = hostByIp(mission, ip);
+    if (!host) {
+      print("ssh: host " + ip + " is not part of this contract's network", "warn");
+      return;
+    }
+    if (host.internal && rt.shellHost !== host.reachableFrom) {
+      print("ssh: " + ip + " unroutable from your position — internal segment.", "danger");
+      print("hop through the pivot: hold a shell on " + host.reachableFrom + " first", "muted");
+      return;
+    }
+    if (!rt.cracked[ip]) {
+      print("ssh: no credentials for " + ip + " — hydra it first", "warn");
+      return;
+    }
+    if (user !== host.sshUser) {
+      await run([
+        { text: "ssh " + user + "@" + ip + " …", d: 150 },
+        { text: user + "@" + ip + ": Permission denied (publickey,password).", tone: "danger", d: 300 },
+        { text: "(nmap banners show which account is valid)", tone: "muted", d: 120 },
+      ]);
+      return;
+    }
+    await run([
+      { text: "ssh " + user + "@" + ip + " …", d: 180 },
+      { text: user + "@" + ip + "'s password: ********", tone: "muted", d: 250 },
+      { text: "Welcome to " + host.name + " (Ubuntu 22.04 LTS · kernel 5.15)", tone: "ok", d: 350 },
+      { text: "you are inside. 'ls' to look around.", tone: "accent", d: 250 },
+    ]);
+    commit((sv) => (sv.active ? { ...sv, active: { ...sv.active, shellHost: ip, discovered: sv.active.discovered.includes(ip) ? sv.active.discovered : sv.active.discovered.concat([ip]) } } : sv));
+    if (host.objectiveOnShell) completeObjective(host.objectiveOnShell);
+    return;
+  }
+
+  /* ---------- shell commands ---------- */
+
+  const shell = rt.shellHost ? hostByIp(mission, rt.shellHost) : undefined;
+  const shellIp = rt.shellHost;
+
+  if (["ls", "cat", "exfil", "decrypt", "disable"].includes(cmd)) {
+    if (!shell || !shellIp) {
+      print("no shell — 'ssh <user>@<ip>' into a host first", "warn");
+      return;
+    }
+  }
+
+  if (cmd === "ls") {
+    const rows = shell.files.map((f) => ({
+      text: "  " + f.name.padEnd(26) + " " + fakeSize(f.name),
+      d: 60,
+    }));
+    if (shell.disableNodes && shell.disableNodes.length) {
+      rows.push({ text: " ", d: 60 });
+      rows.push({ text: "service nodes (disable <id>):", tone: "muted", d: 60 });
+      for (const n of shell.disableNodes) {
+        rows.push({ text: "  " + n.id.padEnd(26) + " " + n.label, tone: "warn", d: 60 });
+      }
+    }
+    await run([{ text: "root@" + shellIp + ":~# ls -la", tone: "muted", d: 80 }, ...rows]);
+    return;
+  }
+
+  if (cmd === "cat") {
+    const file = fileOnHost(shell, arg);
+    if (!file) {
+      print("cat: " + arg + ": No such file or directory", "danger");
+      return;
+    }
+    const key = shellIp + "/" + file.name;
+    if (!rt.filesRead.includes(key)) {
+      commit((sv) => (sv.active ? { ...sv, active: { ...sv.active, filesRead: sv.active.filesRead.concat([key]) } } : sv));
+    }
+    await run(file.content.map((c) => ({ text: c, d: 90 })));
+    if (file.grantsKey && !rt.keysHeld.includes(file.grantsKey)) {
+      commit((sv) => (sv.active ? { ...sv, active: { ...sv.active, keysHeld: sv.active.keysHeld.concat([file.grantsKey]) } } : sv));
+      print("[key absorbed] " + file.grantsKey + " — 'decrypt' can use it now", "ok");
+    }
+    if (file.grantsCredsFor && !rt.cracked[file.grantsCredsFor]) {
+      const target = hostByIp(mission, file.grantsCredsFor);
+      if (target) {
+        commit((sv) => (sv.active ? { ...sv, active: { ...sv.active, cracked: { ...sv.active.cracked, [target.ip]: target.password } } } : sv));
+        print("[creds absorbed] " + target.sshUser + "@" + target.ip + " — password captured from file", "ok");
+      }
+    }
+    if (file.objectiveOnRead) completeObjective(file.objectiveOnRead);
+    return;
+  }
+
+  if (cmd === "exfil") {
+    const file = fileOnHost(shell, arg);
+    if (!file) {
+      print("exfil: " + arg + ": No such file or directory", "danger");
+      return;
+    }
+    const size = fakeSize(file.name);
+    await run([
+      { text: "packing " + file.name + " (" + size + ") …", d: 200 },
+      { text: "uploading via 3 relays · chunk 1/4 ··· ok", tone: "muted", d: 380 },
+      { text: "uploading via 3 relays · chunk 2/4 ··· ok", tone: "muted", d: 380 },
+      { text: "uploading via 3 relays · chunk 3/4 ··· ok", tone: "muted", d: 380 },
+      { text: "uploading via 3 relays · chunk 4/4 ··· ok", tone: "muted", d: 380 },
+      { text: "exfiltrated " + file.name + " → ghost-drop (shredded after 48h)", tone: "ok", d: 300 },
+    ]);
+    if (file.objectiveOnExfil) completeObjective(file.objectiveOnExfil);
+    if (addTrace(20)) await failSequence();
+    return;
+  }
+
+  if (cmd === "decrypt") {
+    const file = fileOnHost(shell, arg);
+    if (!file) {
+      print("decrypt: " + arg + ": No such file or directory", "danger");
+      return;
+    }
+    if (!file.keyId) {
+      print("decrypt: " + file.name + " is not encrypted (nothing to do)", "muted");
+      return;
+    }
+    if (!rt.keysHeld.includes(file.keyId)) {
+      await run([
+        { text: "AES-256-CBC · keyId: " + file.keyId, tone: "warn", d: 150 },
+        { text: "no matching key in your vault.", tone: "danger", d: 250 },
+        { text: "somewhere out there is a file that grants it — 'cat' around.", tone: "muted", d: 150 },
+      ]);
+      return;
+    }
+    await run([
+      { text: "decrypting " + file.name + " with " + file.keyId + " …", d: 200 },
+      { text: "AES-256-CBC · deriving round keys … ok", tone: "muted", d: 300 },
+      { text: "── decrypted ──────────────────────────", tone: "ok", d: 300 },
+      ...(file.decryptedPreview || []).map((c) => ({ text: c, d: 130 })),
+    ]);
+    if (file.objectiveOnDecrypt) completeObjective(file.objectiveOnDecrypt);
+    if (addTrace(5)) await failSequence();
+    return;
+  }
+
+  if (cmd === "disable") {
+    const nodeId = arg.toLowerCase();
+    const node = (shell.disableNodes || []).find((n) => n.id.toLowerCase() === nodeId);
+    if (!node) {
+      print("disable: no such node on this host — 'ls' lists service nodes", "warn");
+      return;
+    }
+    if (rt.nodesDisabled.includes(node.id)) {
+      print("disable: " + node.id + " is already down", "muted");
+      return;
+    }
+    await run([
+      { text: "injecting fault into " + node.id + " …", d: 200 },
+      { text: "forging maintenance window · suppressing alerts ··· ok", tone: "muted", d: 380 },
+      ...node.result.map((r) => ({ text: r, d: 280 })),
+    ]);
+    commit((sv) => (sv.active ? { ...sv, active: { ...sv.active, nodesDisabled: sv.active.nodesDisabled.concat([node.id]) } } : sv));
+    if (node.objectiveId) completeObjective(node.objectiveId);
+    if (addTrace(25)) await failSequence();
+    return;
+  }
+
+  if (cmd === "exit") {
+    if (shell && shellIp) {
+      commit((sv) => (sv.active ? { ...sv, active: { ...sv.active, shellHost: null } } : sv));
+      print("logout — connection to " + shellIp + " closed", "muted");
+    } else {
+      print("nothing to exit", "muted");
+    }
+    return;
+  }
+
+  print("command not found: " + cmd + " — try 'help'", "warn");
+}
+
+/* ---------- input handling ---------- */
+
+async function submitCommand() {
+  if (busy) return;
+  const input = $("term-input");
+  const value = input.value;
+  input.value = "";
+  await exec(value);
+  // check for auto-mission-completion after every command
+  const s = SAVE;
+  const act = activeMissionOf(s);
+  if (act && act.rt.objectivesDone.length >= act.mission.objectives.length) {
+    await finishMissionSequence();
+  }
+}
+
+function onKeyDown(e) {
+  if (e.key === "ArrowUp") {
+    e.preventDefault();
+    if (!history.length) return;
+    const next = histIdx === -1 ? history.length - 1 : Math.max(0, histIdx - 1);
+    histIdx = next;
+    $("term-input").value = history[next] || "";
+  } else if (e.key === "ArrowDown") {
+    e.preventDefault();
+    if (histIdx === -1) return;
+    const next = histIdx + 1;
+    if (next >= history.length) {
+      histIdx = -1;
+      $("term-input").value = "";
+    } else {
+      histIdx = next;
+      $("term-input").value = history[next] || "";
+    }
+  } else if (e.key === "l" && e.ctrlKey) {
+    e.preventDefault();
+    clearLines();
+  }
+}
+
+/* ---------- rendering ---------- */
+
+function renderToolbar() {
+  const act = activeMissionOf(SAVE);
+  const chipMint = $("chip-mint");
+  const chipTrace = $("chip-trace");
+  const chipProxy = $("chip-proxy");
+  const btnAbort = $("btn-abort");
+
+  chipMint.classList.toggle("hidden", !genBusy);
+  if (act) {
+    const info = traceInfo(act.rt.trace);
+    chipTrace.classList.remove("hidden");
+    chipTrace.textContent = "◎ " + act.rt.trace + "% " + info.word;
+    chipTrace.style.color = info.color;
+    chipProxy.classList.remove("hidden");
+    const on = act.rt.proxyOn;
+    chipProxy.className = "chip " + (on ? "proxy-on" : "proxy-off") + (window.innerWidth < 900 ? " hidden" : "");
+    chipProxy.textContent = "⇄ PROXY " + (on ? "ON" : "OFF");
+    btnAbort.classList.remove("hidden");
+  } else {
+    chipTrace.classList.add("hidden");
+    chipProxy.classList.add("hidden");
+    btnAbort.classList.add("hidden");
+  }
+  // prompt label
+  $("term-prompt").textContent = act && act.rt.shellHost ? "root@" + act.rt.shellHost + ":~#" : "operator@ghost:~$";
+}
+
+const TOOLS = [
+  { id: "nslookup", name: "nslookup", unlockLevel: 1 },
+  { id: "nmap", name: "nmap", unlockLevel: 1 },
+  { id: "hydra", name: "hydra", unlockLevel: 1 },
+  { id: "ssh", name: "ssh", unlockLevel: 1 },
+  { id: "proxy", name: "proxy", unlockLevel: 2 },
+  { id: "decrypt", name: "decrypt", unlockLevel: 3 },
+];
+
+function renderPanel() {
+  const prog = xpProgress(SAVE.xp);
+  const act = activeMissionOf(SAVE);
+  const info = act ? traceInfo(act.rt.trace) : null;
+  let html = "";
+
+  // operator card
+  html += '<section class="pcard"><div class="pcard-label-row"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00e07f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 10h.01"/><path d="M15 10h.01"/><path d="M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z"/></svg><span class="pcard-label">OPERATOR</span></div>';
+  html += '<p class="p-rank">' + esc(prog.rank) + '</p>';
+  html += '<p class="p-sub">level ' + prog.level + " · " + prog.into + "/" + prog.span + " xp</p>";
+  html += '<div class="pbar"><div class="pbar-fill" style="width:' + prog.pct + '%"></div></div>';
+  html += '<div class="prow"><span class="coins">◉ ₡' + SAVE.credits + '</span><span class="closed">✓ ' + SAVE.completed.length + " closed · ∞</span></div></section>";
+
+  // trace card
+  if (act && info) {
+    html += '<section class="pcard"><div style="display:flex;align-items:center;justify-content:space-between"><span class="pcard-label">TRACE</span><span class="pcard-label" style="color:' + info.color + '">' + info.word + "</span></div>";
+    html += '<div class="pbar-trace"><div class="pbar-trace-fill" style="width:' + act.rt.trace + "%;background:" + info.color + '"></div></div>';
+    html += '<p class="p-sub" style="margin-top:6px">' + act.rt.trace + "% · hits 100% and the mission is lost</p></section>";
+  }
+
+  // contract card
+  html += '<section class="pcard"><span class="pcard-label">CONTRACT</span>';
+  if (act) {
+    html += '<p style="margin-top:6px;font-size:13px;font-weight:700;color:rgba(255,255,255,.9)">#' + String(act.mission.num).padStart(2, "0") + " " + esc(act.mission.title) + "</p>";
+    html += '<p class="p-sub">' + diffDots(act.mission.difficulty) + " · ₡" + act.mission.payout + " · " + esc(act.mission.client) + "</p>";
+    html += '<ul class="obj-list">';
+    for (const o of act.mission.objectives) {
+      const done = act.rt.objectivesDone.includes(o.id);
+      html += '<li class="' + (done ? "done" : "") + '"><span class="marker"></span><span>' + esc(o.label) + "</span></li>";
+    }
+    html += "</ul>";
+  } else {
+    html += '<p class="p-sub" style="margin-top:8px">no active contract</p>';
+    html += '<button class="p-btn" id="panel-open-board">OPEN BOARD</button>';
+  }
+  html += "</section>";
+
+  // toolkit
+  html += '<section class="pcard"><span class="pcard-label">TOOLKIT</span><div class="tool-grid">';
+  for (const t of TOOLS) {
+    const unlocked = prog.level >= t.unlockLevel;
+    html += '<div class="tool' + (unlocked ? "" : " locked") + '" title="' + (unlocked ? t.name : t.name + " — unlocks at level " + t.unlockLevel) + '">';
+    html += '<span style="font-size:11px;color:' + (unlocked ? "#00e07f" : "rgba(255,255,255,.4)") + '">' + (unlocked ? (t.id === "nslookup" ? "◎" : t.id === "nmap" ? "📡" : t.id === "hydra" ? "🔥" : t.id === "ssh" ? "🔑" : t.id === "proxy" ? "⇄" : "🔐") : "🔒") + "</span>";
+    html += '<span class="tname">' + t.name + "</span></div>";
+  }
+  html += "</div></section>";
+
+  // hosts
+  if (act && act.rt.discovered.length > 0) {
+    html += '<section class="pcard"><span class="pcard-label">HOSTS</span><ul class="hosts-list">';
+    for (const ip of act.rt.discovered) {
+      const h = hostByIp(act.mission, ip);
+      const shelled = act.rt.shellHost === ip;
+      const scanned = act.rt.scanned.includes(ip);
+      html += '<li><span class="hdot" style="background:' + (shelled ? "#00e07f" : scanned ? "#fbbf24" : "rgba(255,255,255,.2)") + '"></span>';
+      html += '<span class="hname" style="' + (shelled ? "color:#00e07f" : "") + '">' + esc(h ? h.name : ip) + '</span><span class="hip">' + ip + "</span>";
+      if (shelled) html += '<span class="shell-tag">SHELL</span>';
+      html += "</li>";
+    }
+    html += "</ul></section>";
+  }
+
+  $("term-panel").innerHTML = html;
+  const pob = $("panel-open-board");
+  if (pob) pob.addEventListener("click", () => { openBoard(); void ensureGenPool(); });
+}
+
+function openBoard() {
+  boardOpen = true;
+  $("board").classList.remove("hidden");
+  renderBoard();
+}
+
+function closeBoard() {
+  boardOpen = false;
+  $("board").classList.add("hidden");
+}
+
+function renderBoard() {
+  if (!boardOpen) return;
+  const prog = xpProgress(SAVE.xp);
+  const gen = genListOf(SAVE);
+  let html = "";
+
+  // story arc
+  html += '<p class="board-section">STORY ARC — THE OBSIDIAN CONSPIRACY</p>';
+  for (const m of MISSIONS) {
+    const done = SAVE.completed.includes(m.id);
+    const locked = prog.level < m.minLevel;
+    const clickable = !done && !locked;
+    html += '<button class="mission-card' + (done ? " done" : locked ? " locked" : "") + '" data-mission="' + m.id + '"' + (clickable ? "" : " disabled") + ' aria-label="Mission ' + m.num + ": " + esc(m.title) + '">';
+    html += '<div class="mc-row"><span class="mc-num' + (done ? " done" : "") + '">#' + String(m.num).padStart(2, "0") + '</span><span class="mc-title">' + esc(m.title) + '</span><span class="mc-diff">' + diffDots(m.difficulty) + "</span>";
+    html += '<span style="flex:1"></span>';
+    if (done) html += '<span class="mc-status closed">✓ CLOSED</span>';
+    else if (locked) html += '<span class="mc-status locked">🔒 LEVEL ' + m.minLevel + "</span>";
+    else html += '<span class="mc-status avail">₡' + m.payout + " · " + m.xp + "xp</span>";
+    html += "</div>";
+    html += '<p class="mc-brief">' + esc(m.brief[0]) + "</p>";
+    html += '<p class="mc-client">client: ' + esc(m.client) + "</p>";
+    if (clickable) html += '<p class="mc-accept">› accept contract</p>';
+    if (locked && !done) html += '<p class="mc-client" style="color:rgba(255,255,255,.3)">↻ close more contracts to rank up</p>';
+    html += "</button>";
+  }
+
+  // generated bounties
+  html += '<div class="board-sep"><span class="seclabel">✦ DARKNET BOUNTIES — GENERATED · ENDLESS</span><span class="sechint">random story · random difficulty · always fresh</span></div>';
+  for (const m of gen) {
+    const isActive = SAVE.active && SAVE.active.missionId === m.id;
+    const clickable = !isActive;
+    html += '<button class="mission-card bounty' + (isActive ? " active" : "") + '" data-mission="' + m.id + '"' + (clickable ? "" : " disabled") + ' aria-label="Bounty ' + m.num + ": " + esc(m.title) + '">';
+    html += '<div class="mc-row"><span class="mc-num">#' + m.num + '</span><span class="mc-badge">BOUNTY</span><span class="mc-title">' + esc(m.title) + '</span><span class="mc-diff">' + diffDots(m.difficulty) + "</span>";
+    html += '<span style="flex:1"></span>';
+    if (isActive) html += '<span class="mc-status active">● IN PROGRESS</span>';
+    else html += '<span class="mc-status avail">₡' + m.payout + " · " + m.xp + "xp</span>";
+    html += "</div>";
+    html += '<p class="mc-brief">' + esc(m.brief[0]) + "</p>";
+    html += '<p class="mc-client">client: ' + esc(m.client) + " · trace ×" + (m.traceScale || 1).toFixed(2) + "</p>";
+    if (clickable) html += '<p class="mc-accept">› accept bounty</p>';
+    html += "</button>";
+  }
+  if (genBusy) {
+    for (let i = 0; i < Math.max(0, GEN_POOL_TARGET - gen.length); i++) {
+      html += '<div class="mint-slot">▒▒ minting new contract ▒▒ rolling difficulty, org, motives and files…</div>';
+    }
+  }
+  if (!genBusy && gen.length === 0) {
+    html += '<div class="empty-slot">the bounty pool is empty — type \'reroll\' or close a contract to mint new work.</div>';
+  }
+
+  $("board-body").innerHTML = html;
+}
+
+function renderAll() {
+  renderToolbar();
+  renderPanel();
+  renderBoard();
+}
+
+async function acceptMission(m) {
+  closeBoard();
+  await exec("start " + m.num);
+}
+
+/* ---------- board events ---------- */
+
+$("board-body").addEventListener("click", (e) => {
+  const card = e.target.closest("[data-mission]");
+  if (!card || card.disabled) return;
+  const mission = findMissionById(SAVE, card.getAttribute("data-mission"));
+  if (mission) void acceptMission(mission);
+});
+$("btn-board").addEventListener("click", () => {
+  playSound("click");
+  if (boardOpen) closeBoard();
+  else { openBoard(); void ensureGenPool(); }
+});
+$("btn-board-close").addEventListener("click", () => { playSound("click"); closeBoard(); });
+$("btn-reroll").addEventListener("click", () => { playSound("click"); void exec("reroll"); });
+$("btn-abort").addEventListener("click", () => { playSound("click"); void exec("abort"); });
+
+/* ---------- terminal input events ---------- */
+
+$("term-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  void submitCommand();
+});
+$("term-input").addEventListener("keydown", onKeyDown);
+$("term-main").addEventListener("click", () => {
+  const sel = window.getSelection();
+  if (!sel || sel.isCollapsed) $("term-input").focus({ preventScroll: true });
+});
+/* ================================================================== */
+/* Part 6: OS shell — boot, lock, desktop, window, taskbar, power      */
+/* + app initialization                                               */
+/* ================================================================== */
+
+/* ---------- phase switching ---------- */
+
+const PHASES = ["boot", "lock", "desktop", "power"];
+
+function showPhase(name) {
+  for (const p of PHASES) $(p).classList.toggle("hidden", p !== name);
+}
+
+/* ---------- boot sequence ---------- */
+
+const BOOT_LINES = [
+  { tag: "OK", text: "neuro-link handshake complete — 3 relays, 0 logs" },
+  { tag: "OK", text: "mounting /dev/darknet (encrypted · plausible deniability)" },
+  { tag: "OK", text: "ghost-shell kernel 6.16-gh0st loaded" },
+  { tag: "OK", text: "probing hardware: 1 brain, 2 hands, suspicious amounts of coffee" },
+  { tag: "WARN", text: "bluebird sensor array: signal lost (good)" },
+  { tag: "OK", text: "loading contract engine — OBSIDIAN arc + procedural bounties" },
+  { tag: "OK", text: "localStorage vault attached — progress survives reboots" },
+  { tag: "WARN", text: "offline mode: no network required, ever" },
+  { tag: "OK", text: "TOR circuits established: 3 hops · latency 212ms" },
+  { tag: "OK", text: "CRT phosphor emulator engaged" },
+  { tag: "OK", text: "session ready — handing off to AUTH-GATEWAY" },
+];
+
+let bootSkip = false;
+let booted = false;
+
+function bootLineHtml(l) {
+  const cls = l.tag === "OK" ? "ok" : l.tag === "WARN" ? "warn" : "dim";
+  return '<p class="boot-line"><b class="' + cls + '">[ ' + l.tag + " ]</b> " + esc(l.text) + "</p>";
+}
+
+async function runBoot() {
+  showPhase("boot");
+  bootSkip = false;
+  booted = false;
+  const linesBox = $("boot-lines");
+  // keep the sweep line, clear any previous boot lines
+  const sweep = linesBox.querySelector(".boot-sweep");
+  linesBox.innerHTML = "";
+  if (sweep) linesBox.appendChild(sweep);
+  $("boot-bar-fill").style.width = "0%";
+  $("boot-pct").textContent = "0%";
+
+  const t0 = Date.now();
+  const TOTAL = 4200; // ms of full boot
+  const progressTimer = setInterval(() => {
+    if (bootSkip) { clearInterval(progressTimer); return; }
+    const pct = Math.min(100, Math.round(((Date.now() - t0) / TOTAL) * 100));
+    $("boot-bar-fill").style.width = pct + "%";
+    $("boot-pct").textContent = pct + "%";
+  }, 90);
+
+  for (let i = 0; i < BOOT_LINES.length; i++) {
+    if (bootSkip) break;
+    const el = document.createElement("div");
+    linesBox.insertBefore(el, sweep);
+    // type-in reveal
+    el.innerHTML = bootLineHtml(BOOT_LINES[i]);
+    const p = el.querySelector(".boot-line");
+    p.style.opacity = "0";
+    await sleep(bootSkip ? 0 : 240);
+    p.style.transition = "opacity .16s ease-out";
+    p.style.opacity = "1";
+    linesBox.scrollTop = linesBox.scrollHeight;
+  }
+  const remaining = Math.max(0, TOTAL - (Date.now() - t0));
+  await sleep(bootSkip ? 120 : remaining + 250);
+  clearInterval(progressTimer);
+  $("boot-bar-fill").style.width = "100%";
+  $("boot-pct").textContent = "100%";
+  await sleep(bootSkip ? 80 : 420);
+  if (!booted) {
+    booted = true;
+    showPhase("lock");
+    $("lock-pass").value = "";
+    setTimeout(() => $("lock-pass").focus(), 120);
+  }
+}
+
+$("boot").addEventListener("click", () => { bootSkip = true; });
+
+/* ---------- lock → desktop ---------- */
+
+let desktopOpened = false;
+
+function enterDesktop() {
+  if (desktopOpened) return;
+  desktopOpened = true;
+  showPhase("desktop");
+  playSound("unlock");
+  // start the live wallpaper + clock (idempotent)
+  applyWallpaper();
+  applyCrt();
+  updateSoundTray();
+  MatrixRain.start($("matrix-canvas"));
+  // auto-launch the terminal once per desktop session
+  setTimeout(() => {
+    if ($("window").classList.contains("hidden")) openWindow();
+    $("term-input").focus({ preventScroll: true });
+  }, 300);
+}
+
+$("lock-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  playSound("click");
+  enterDesktop();
+});
+
+function lockSession() {
+  desktopOpened = false;
+  $("start-menu").classList.add("hidden");
+  showPhase("lock");
+  $("lock-pass").value = "";
+  setTimeout(() => $("lock-pass").focus(), 120);
+}
+
+/* ---------- window management ---------- */
+
+const DESKTOP_DEFAULTS = () => {
+  const vw = window.innerWidth, vh = window.innerHeight;
+  if (vw < 900) return { left: 6, top: 6, width: vw - 12, height: vh - 62 };
+  const width = Math.min(1080, vw - 60);
+  const height = Math.min(700, vh - 90);
+  return { left: Math.round((vw - width) / 2), top: Math.round((vh - 60 - height) / 2), width, height };
+};
+
+let winMaxed = false;
+
+function openWindow() {
+  const win = $("window");
+  const d = DESKTOP_DEFAULTS();
+  win.style.left = d.left + "px";
+  win.style.top = d.top + "px";
+  win.style.width = d.width + "px";
+  win.style.height = d.height + "px";
+  win.classList.remove("hidden", "max");
+  winMaxed = false;
+  $("task-terminal").classList.add("running");
+  playSound("open");
+  $("term-input").focus({ preventScroll: true });
+}
+
+function closeWindow() {
+  $("window").classList.add("hidden");
+  $("task-terminal").classList.remove("running");
+  closeBoard();
+  playSound("click");
+}
+
+function toggleWindow() {
+  if ($("window").classList.contains("hidden")) openWindow();
+  else closeWindow();
+}
+
+function toggleMaximize() {
+  const win = $("window");
+  winMaxed = !winMaxed;
+  if (winMaxed) {
+    win.classList.add("max");
+    win.style.left = "0px";
+    win.style.top = "0px";
+    win.style.width = "100%";
+    win.style.height = "calc(100% - 44px)";
+  } else {
+    const d = DESKTOP_DEFAULTS();
+    win.classList.remove("max");
+    win.style.left = d.left + "px";
+    win.style.top = d.top + "px";
+    win.style.width = d.width + "px";
+    win.style.height = d.height + "px";
+  }
+  playSound("click");
+}
+
+/* window dragging (desktop only) */
+(function setupDrag() {
+  const bar = $("win-titlebar");
+  const win = $("window");
+  let dragging = false, offX = 0, offY = 0;
+
+  bar.addEventListener("pointerdown", (e) => {
+    if (window.innerWidth < 900) return;
+    if (e.target.closest("button")) return;
+    if (winMaxed) return;
+    dragging = true;
+    offX = e.clientX - win.offsetLeft;
+    offY = e.clientY - win.offsetTop;
+    bar.setPointerCapture(e.pointerId);
+  });
+  bar.addEventListener("pointermove", (e) => {
+    if (!dragging) return;
+    const w = win.offsetWidth, h = win.offsetHeight;
+    let x = e.clientX - offX, y = e.clientY - offY;
+    // clamp: keep the title bar reachable
+    x = Math.max(8 - w + 120, Math.min(window.innerWidth - 120, x));
+    y = Math.max(0, Math.min(window.innerHeight - 90, y));
+    win.style.left = x + "px";
+    win.style.top = y + "px";
+  });
+  bar.addEventListener("pointerup", (e) => {
+    dragging = false;
+    try { bar.releasePointerCapture(e.pointerId); } catch (err) { /* already released */ }
+  });
+})();
+
+$("win-close").addEventListener("click", closeWindow);
+$("win-max").addEventListener("click", toggleMaximize);
+$("icon-terminal").addEventListener("click", () => { playSound("click"); openWindow(); });
+$("task-terminal").addEventListener("click", () => { playSound("click"); toggleWindow(); });
+
+/* ---------- start menu ---------- */
+
+function toggleStartMenu() {
+  playSound("click");
+  $("start-menu").classList.toggle("hidden");
+}
+
+$("start-btn").addEventListener("click", (e) => {
+  e.stopPropagation();
+  toggleStartMenu();
+});
+$("sm-terminal").addEventListener("click", () => { $("start-menu").classList.add("hidden"); openWindow(); });
+$("sm-lock").addEventListener("click", () => { playSound("click"); lockSession(); });
+$("sm-restart").addEventListener("click", () => { $("start-menu").classList.add("hidden"); doRestart(); });
+$("sm-shutdown").addEventListener("click", () => { $("start-menu").classList.add("hidden"); doShutdown(); });
+
+// close start menu when clicking elsewhere
+$("desktop").addEventListener("click", (e) => {
+  if (!e.target.closest("#start-menu") && !e.target.closest("#start-btn")) {
+    $("start-menu").classList.add("hidden");
+  }
+});
+
+/* ---------- power flows ---------- */
+
+function doShutdown() {
+  playSound("shutdown");
+  desktopOpened = false;
+  showPhase("power");
+  $("power-box").innerHTML = "SYSTEM HALTED<span>click anywhere to reboot</span>";
+}
+
+function doRestart() {
+  playSound("shutdown");
+  desktopOpened = false;
+  showPhase("power");
+  $("power-box").innerHTML = "REBOOTING<span>…</span>";
+  setTimeout(() => { void runBoot(); }, 900);
+}
+
+$("power").addEventListener("click", () => { void runBoot(); });
+
+/* ---------- sound tray ---------- */
+
+function updateSoundTray() {
+  $("tray-sound").textContent = SETTINGS.sound ? "SND ON" : "SND OFF";
+  $("tray-sound").style.color = SETTINGS.sound ? "#00e07f" : "rgba(255,255,255,.35)";
+}
+
+$("tray-sound").addEventListener("click", () => {
+  SETTINGS.sound = !SETTINGS.sound;
+  saveSettings();
+  updateSoundTray();
+  if (SETTINGS.sound) playSound("notify");
+});
+
+/* ---------- keyboard shortcuts ---------- */
+
+window.addEventListener("keydown", (e) => {
+  if ($("desktop").classList.contains("hidden")) return;
+  if (e.key === "F6") { // next wallpaper
+    const ids = WALLPAPERS.map((w) => w.id);
+    const idx = ids.indexOf(SETTINGS.wallpaper);
+    SETTINGS.wallpaper = ids[(idx + 1) % ids.length];
+    saveSettings();
+    applyWallpaper();
+    playSound("click");
+  } else if (e.key === "Escape") {
+    if (boardOpen) closeBoard();
+    else $("start-menu").classList.add("hidden");
+  }
+});
+
+/* ---------- app init ---------- */
+
+function initTerminal() {
+  // welcome lines
+  print("GHOST SHELL TERMINAL v2.2 — STANDALONE BUILD", "head");
+  print("darknet uplink: LOCAL · offline procedural generator · zero telemetry", "muted");
+  print("contracts: 8-mission story arc + endless generated bounties", "muted");
+  print("type 'help' for commands · 'missions' to browse the board", "muted");
+  print(" ", "out");
+
+  // load save from localStorage (defensive parse)
+  let parsed;
+  try {
+    parsed = parseSave(JSON.parse(localStorage.getItem(SAVE_KEY) || "null"));
+  } catch (e) {
+    parsed = freshSave();
+  }
+  SAVE = parsed;
+  persist();
+
+  // mid-mission resume banner
+  const act = activeMissionOf(SAVE);
+  if (act) {
+    print("session restored — contract #" + String(act.mission.num).padStart(2, "0") + " \"" + act.mission.title + "\" · trace " + act.rt.trace + "%", "muted");
+    if (act.rt.shellHost) print("shell still open on " + act.rt.shellHost + " — 'ls' to look around", "muted");
+  }
+
+  renderAll();
+  // keep the darknet bounty pool stocked (non-blocking)
+  void ensureGenPool();
+}
+
+/* ---------- go ---------- */
+
+startClock();
+initTerminal();
+void runBoot();
+</script>
+</body>
+</html>
