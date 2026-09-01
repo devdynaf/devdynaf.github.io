@@ -25,6 +25,10 @@ A virtual pottery wheel that lets you squish, shape, and paint your own 3D ceram
 
 **Tags:** simulation · art · pottery
 
+### [CYPHER](https://devdynaf.github.io/CYPHER/)
+A virtual network hacking simulator, where you hack into networks to serve release files and serve justice.
+
+**Tags:** simulation · hacking · computer
 ---
 
 ##  Why DYNAF.GAMES?
